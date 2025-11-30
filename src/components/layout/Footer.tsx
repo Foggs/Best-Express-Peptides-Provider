@@ -52,7 +52,7 @@ export function Footer() {
               <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
               <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
-              <li><Link href="/refund" className="hover:text-primary transition-colors">Refund Policy</Link></li>
+              <li><Link href="/refund" className="hover:text-primary transition-colors">Refund and Cancellation Policy</Link></li>
             </ul>
           </div>
         </div>
