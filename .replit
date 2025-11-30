@@ -11,6 +11,7 @@ channel = "stable-25_05"
 [userenv.shared]
 NEXTAUTH_SECRET = "peptidelabs-secret-key-change-in-production-123456"
 NEXTAUTH_URL = "https://localhost:5000"
+NEXT_PUBLIC_GA_ID = "G-XXXXXXXXXX"
 
 [workflows]
 runButton = "Project"
@@ -39,3 +40,7 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 41365
+externalPort = 3000

@@ -7,6 +7,7 @@ import { AgeVerification } from "@/components/layout/AgeVerification"
 import { DisclaimerBanner } from "@/components/layout/DisclaimerBanner"
 import { Toaster } from "@/components/ui/toaster"
 import { Providers } from "./providers"
+import { GoogleAnalytics } from "@/components/GoogleAnalytics"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -77,6 +78,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <Toaster />
+          <GoogleAnalytics />
         </Providers>
       </body>
     </html>
