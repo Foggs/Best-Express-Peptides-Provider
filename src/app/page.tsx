@@ -78,11 +78,6 @@ export default async function HomePage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="border-white text-blue-900 hover:bg-white/10">
-                <Link href="/about">
-                  Learn More
-                </Link>
-              </Button>
             </div>
           </div>
         </div>
