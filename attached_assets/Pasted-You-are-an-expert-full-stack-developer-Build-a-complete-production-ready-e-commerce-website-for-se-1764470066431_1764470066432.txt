@@ -1,0 +1,66 @@
+You are an expert full-stack developer. Build a complete, production-ready e-commerce website for selling research peptides (similar to https://thrivehrt.com/product-category/peptides/) using Next.js 15 (App Router) + TypeScript.
+
+Core requirements:
+- Modern, medical-grade, trust-building design (clean, white/blue color scheme, professional, HIPAA-aware vibe but we are selling "research use only" peptides)
+- Age verification gate (18+ or 21+ popup on first visit with cookie)
+- Full e-commerce functionality: product catalog, individual product pages, cart, checkout with Stripe
+- All peptides must be clearly labeled "For Research Use Only. Not for human consumption."
+- Responsive for mobile & desktop
+
+Tech stack (use exactly these, all work perfectly on Replit):
+- Next.js 15 (App Router) + TypeScript
+- Tailwind CSS + shadcn/ui + Tailwind Merge
+- Prisma + PostgreSQL (use Replit’s built-in Database or Supabase if easier)
+- NextAuth.js (for optional account/login – email + Google)
+- Stripe Checkout (test + live mode)
+- Zod for form validation
+- React Hook Form
+- Lucide-react icons
+- Uploadthing or Cloudinary for product images
+- Zustand or Redux for cart state (Zustand preferred – lighter)
+- MDX for rich product descriptions (dosing charts, studies, benefits, etc.)
+
+Pages & Features to build:
+1. Homepage with hero, trust badges, featured peptides, disclaimer banner
+2. /peptides – category page with filters (Strength, Longevity, Recovery, Weight Loss, Cognitive, etc.) + search + sort
+3. /peptides/[slug] – detailed product page with:
+   - High-quality image gallery
+   - Price + variants (e.g., 5mg, 10mg)
+   - Quantity selector
+   - "Add to Cart" button
+   - Tabs: Description, Research, COA, Shipping Info, FAQ
+   - Related products
+   - Clear "For Research Use Only" warnings
+4. Cart page (/cart) with persist across sessions (localStorage + sync when logged in)
+5. Checkout (/checkout) using Stripe Checkout (one-page, no saved cards needed)
+6. Thank you / success page
+7. Basic account dashboard (order history – optional but nice)
+8. Legal pages: Terms, Privacy, Shipping, Disclaimer, Refund Policy
+9. Admin route (/admin) protected with simple email/password (hardcode for now) to add/edit products
+
+Example products to include (pre-populate DB):
+- BPC-157 (5mg, 10mg)
+- TB-500
+- Semaglutide
+- Tirzepatide
+- Retatrutide
+- GHK-Cu
+- Ipamorelin + CJC-1295 blend
+- SS-31, MOTS-c, etc.
+
+Bonus (if time):
+- Newsletter signup (convertkit or mailchimp)
+- Blog section using MDX
+- Trustpilot or reviews integration
+- Live chat (Tawk.to or Crisp)
+
+Deliverables:
+- Fully working Replit project (publicly shareable)
+- All environment variables clearly listed
+- Seed file for initial products
+- README with setup instructions and Stripe test cards
+- Deploy button for Vercel (optional but preferred)
+
+Start by creating the Next.js project with `npx create-next-app@latest` (App Router, TypeScript, Tailwind, src directory) and build from there. Use shadcn/ui components heavily for speed and beauty.
+
+Make it look more premium and trustworthy than ThriveHRT.
