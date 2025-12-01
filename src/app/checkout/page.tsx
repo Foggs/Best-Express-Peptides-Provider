@@ -24,6 +24,58 @@ interface Errors {
   phone?: string
 }
 
+interface InputWithErrorProps {
+  id: string
+  label: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBlur: (field: string) => void
+  error?: string
+  type?: string
+  placeholder?: string
+  required?: boolean
+  optional?: boolean
+  touched: Record<string, boolean>
+}
+
+function InputWithError({
+  id,
+  label,
+  value,
+  onChange,
+  onBlur,
+  error,
+  type = "text",
+  placeholder,
+  required,
+  optional,
+  touched,
+}: InputWithErrorProps) {
+  const hasError = touched[id] && error
+  return (
+    <div>
+      <Label htmlFor={id} className={hasError ? "text-red-500" : ""}>
+        {label} {required && !optional && "*"} {optional && "(Optional)"}
+      </Label>
+      <Input
+        id={id}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        onBlur={() => onBlur(id)}
+        className={hasError ? "border-red-500 focus:border-red-500" : ""}
+      />
+      {hasError && (
+        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+          <AlertCircle className="h-3 w-3" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, getTotal, clearCart } = useCartStore()
@@ -244,32 +296,6 @@ export default function CheckoutPage() {
     }
   }
 
-  const InputWithError = ({ id, label, value, onChange, error, type = "text", placeholder, required, optional }: any) => {
-    const hasError = touched[id] && error
-    return (
-      <div>
-        <Label htmlFor={id} className={hasError ? "text-red-500" : ""}>
-          {label} {required && !optional && "*"} {optional && "(Optional)"}
-        </Label>
-        <Input
-          id={id}
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          onBlur={() => handleBlur(id)}
-          className={hasError ? "border-red-500 focus:border-red-500" : ""}
-        />
-        {hasError && (
-          <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-            <AlertCircle className="h-3 w-3" />
-            <span>{error}</span>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div className="py-8">
       <div className="container-custom max-w-4xl">
@@ -296,8 +322,10 @@ export default function CheckoutPage() {
                   type="email"
                   placeholder="your@email.com"
                   value={email}
-                  onChange={(e: any) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={handleBlur}
                   error={errors.email}
+                  touched={touched}
                   required={true}
                 />
                 <p className="text-xs text-muted-foreground">Your order confirmation and tracking info will be sent here.</p>
@@ -319,8 +347,10 @@ export default function CheckoutPage() {
                     label="First Name"
                     placeholder="John"
                     value={firstName}
-                    onChange={(e: any) => setFirstName(e.target.value)}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    onBlur={handleBlur}
                     error={errors.firstName}
+                    touched={touched}
                     required={true}
                   />
                   <InputWithError
@@ -328,8 +358,10 @@ export default function CheckoutPage() {
                     label="Last Name"
                     placeholder="Doe"
                     value={lastName}
-                    onChange={(e: any) => setLastName(e.target.value)}
+                    onChange={(e) => setLastName(e.target.value)}
+                    onBlur={handleBlur}
                     error={errors.lastName}
+                    touched={touched}
                     required={true}
                   />
                 </div>
@@ -339,8 +371,10 @@ export default function CheckoutPage() {
                   label="Address"
                   placeholder="123 Main Street"
                   value={address}
-                  onChange={(e: any) => setAddress(e.target.value)}
+                  onChange={(e) => setAddress(e.target.value)}
+                  onBlur={handleBlur}
                   error={errors.address}
+                  touched={touched}
                   required={true}
                 />
 
@@ -349,8 +383,10 @@ export default function CheckoutPage() {
                   label="Apartment, Suite, etc."
                   placeholder="Apt 4B"
                   value={apartment}
-                  onChange={(e: any) => setApartment(e.target.value)}
+                  onChange={(e) => setApartment(e.target.value)}
+                  onBlur={handleBlur}
                   error={errors.apartment}
+                  touched={touched}
                   optional={true}
                 />
 
@@ -361,8 +397,10 @@ export default function CheckoutPage() {
                       label="City"
                       placeholder="New York"
                       value={city}
-                      onChange={(e: any) => setCity(e.target.value)}
+                      onChange={(e) => setCity(e.target.value)}
+                      onBlur={handleBlur}
                       error={errors.city}
+                      touched={touched}
                       required={true}
                     />
                   </div>
@@ -371,8 +409,10 @@ export default function CheckoutPage() {
                     label="State"
                     placeholder="NY"
                     value={state}
-                    onChange={(e: any) => setState(e.target.value)}
+                    onChange={(e) => setState(e.target.value)}
+                    onBlur={handleBlur}
                     error={errors.state}
+                    touched={touched}
                     required={true}
                   />
                 </div>
@@ -382,8 +422,10 @@ export default function CheckoutPage() {
                   label="Zip Code"
                   placeholder="10001"
                   value={zipCode}
-                  onChange={(e: any) => setZipCode(e.target.value)}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  onBlur={handleBlur}
                   error={errors.zipCode}
+                  touched={touched}
                   required={true}
                 />
 
@@ -393,8 +435,10 @@ export default function CheckoutPage() {
                   type="tel"
                   placeholder="(555) 123-4567"
                   value={phone}
-                  onChange={(e: any) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onBlur={handleBlur}
                   error={errors.phone}
+                  touched={touched}
                   optional={true}
                 />
               </CardContent>
