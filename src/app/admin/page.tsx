@@ -28,6 +28,7 @@ interface AdminUser {
 }
 
 export default function AdminDashboard() {
+  const [mounted, setMounted] = useState(false)
   const [adminToken, setAdminToken] = useState<string | null>(null)
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
   const [coupons, setCoupons] = useState<Coupon[]>([])
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
   const [loginLoading, setLoginLoading] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const savedToken = localStorage.getItem("adminToken")
     const savedUser = localStorage.getItem("adminUser")
     if (savedToken && savedUser) {
@@ -212,6 +214,14 @@ export default function AdminDashboard() {
     })
     setEditingId(null)
     setShowForm(false)
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-8">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
   }
 
   if (!adminToken) {
