@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/store/cart"
 import { formatPrice } from "@/lib/utils"
-import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2 } from "lucide-react"
+import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin } from "lucide-react"
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -18,6 +18,14 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [address, setAddress] = useState("")
+  const [apartment, setApartment] = useState("")
+  const [city, setCity] = useState("")
+  const [state, setState] = useState("")
+  const [zipCode, setZipCode] = useState("")
+  const [phone, setPhone] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -49,6 +57,11 @@ export default function CheckoutPage() {
       alert('Please enter your email address')
       return
     }
+    
+    if (!firstName || !lastName || !address || !city || !state || !zipCode) {
+      alert('Please fill in all required shipping address fields')
+      return
+    }
 
     setLoading(true)
     try {
@@ -60,6 +73,16 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items,
           email,
+          shippingAddress: {
+            firstName,
+            lastName,
+            address,
+            apartment,
+            city,
+            state,
+            zipCode,
+            phone,
+          },
         }),
       })
 
@@ -111,6 +134,115 @@ export default function CheckoutPage() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Your order confirmation and tracking info will be sent here.
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Shipping Address
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Enter the address where you want your order delivered.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="address">Address *</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    placeholder="123 Main Street"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="apartment">Apartment, Suite, etc. (Optional)</Label>
+                  <Input
+                    id="apartment"
+                    type="text"
+                    placeholder="Apt 4B"
+                    value={apartment}
+                    onChange={(e) => setApartment(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="city">City *</Label>
+                    <Input
+                      id="city"
+                      type="text"
+                      placeholder="New York"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="state">State *</Label>
+                    <Input
+                      id="state"
+                      type="text"
+                      placeholder="NY"
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="zipCode">Zip Code *</Label>
+                  <Input
+                    id="zipCode"
+                    type="text"
+                    placeholder="10001"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">Phone Number (Optional)</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -173,7 +305,7 @@ export default function CheckoutPage() {
                   className="w-full" 
                   size="lg" 
                   onClick={handleCheckout}
-                  disabled={loading || !email}
+                  disabled={loading || !email || !firstName || !lastName || !address || !city || !state || !zipCode}
                 >
                   {loading ? (
                     <>
