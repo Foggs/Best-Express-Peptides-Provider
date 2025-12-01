@@ -51,7 +51,7 @@ function InputWithError({
   optional,
   touched,
 }: InputWithErrorProps) {
-  const hasError = touched[id] && error
+  const hasError = error && (touched[id] || value !== "")
   return (
     <div>
       <Label htmlFor={id} className={hasError ? "text-red-500" : ""}>
@@ -147,47 +147,29 @@ export default function CheckoutPage() {
   // Handle field blur
   const handleBlur = (field: string) => {
     setTouched({ ...touched, [field]: true })
-    validateField(field)
   }
 
-  // Validate individual field
-  const validateField = (field: string) => {
+  // Validate individual field with live feedback
+  const validateFieldLive = (fieldName: string, value: string) => {
     let error: string | undefined
+    
+    if (fieldName === "email") error = validateEmail(value)
+    else if (fieldName === "firstName") error = validateName(value, "First Name")
+    else if (fieldName === "lastName") error = validateName(value, "Last Name")
+    else if (fieldName === "address") error = validateAddress(value)
+    else if (fieldName === "apartment") return
+    else if (fieldName === "city") error = validateCity(value)
+    else if (fieldName === "state") error = validateState(value)
+    else if (fieldName === "zipCode") error = validateZipCode(value)
+    else if (fieldName === "phone") error = validatePhone(value)
 
-    switch (field) {
-      case "email":
-        error = validateEmail(email)
-        break
-      case "firstName":
-        error = validateName(firstName, "First Name")
-        break
-      case "lastName":
-        error = validateName(lastName, "Last Name")
-        break
-      case "address":
-        error = validateAddress(address)
-        break
-      case "city":
-        error = validateCity(city)
-        break
-      case "state":
-        error = validateState(state)
-        break
-      case "zipCode":
-        error = validateZipCode(zipCode)
-        break
-      case "phone":
-        error = validatePhone(phone)
-        break
-    }
-
+    const newErrors = { ...errors }
     if (error) {
-      setErrors({ ...errors, [field]: error })
+      newErrors[fieldName as keyof Errors] = error
     } else {
-      const newErrors = { ...errors }
-      delete newErrors[field as keyof Errors]
-      setErrors(newErrors)
+      delete newErrors[fieldName as keyof Errors]
     }
+    setErrors(newErrors)
   }
 
   // Validate entire form
@@ -219,6 +201,17 @@ export default function CheckoutPage() {
     if (phoneError) newErrors.phone = phoneError
 
     setErrors(newErrors)
+    setTouched({
+      email: true,
+      firstName: true,
+      lastName: true,
+      address: true,
+      apartment: true,
+      city: true,
+      state: true,
+      zipCode: true,
+      phone: true,
+    })
     return Object.keys(newErrors).length === 0
   }
 
@@ -322,7 +315,7 @@ export default function CheckoutPage() {
                   type="email"
                   placeholder="your@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); validateFieldLive("email", e.target.value); }}
                   onBlur={handleBlur}
                   error={errors.email}
                   touched={touched}
@@ -347,7 +340,7 @@ export default function CheckoutPage() {
                     label="First Name"
                     placeholder="John"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => { setFirstName(e.target.value); validateFieldLive("firstName", e.target.value); }}
                     onBlur={handleBlur}
                     error={errors.firstName}
                     touched={touched}
@@ -358,7 +351,7 @@ export default function CheckoutPage() {
                     label="Last Name"
                     placeholder="Doe"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => { setLastName(e.target.value); validateFieldLive("lastName", e.target.value); }}
                     onBlur={handleBlur}
                     error={errors.lastName}
                     touched={touched}
@@ -371,7 +364,7 @@ export default function CheckoutPage() {
                   label="Address"
                   placeholder="123 Main Street"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => { setAddress(e.target.value); validateFieldLive("address", e.target.value); }}
                   onBlur={handleBlur}
                   error={errors.address}
                   touched={touched}
@@ -397,7 +390,7 @@ export default function CheckoutPage() {
                       label="City"
                       placeholder="New York"
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      onChange={(e) => { setCity(e.target.value); validateFieldLive("city", e.target.value); }}
                       onBlur={handleBlur}
                       error={errors.city}
                       touched={touched}
@@ -409,7 +402,7 @@ export default function CheckoutPage() {
                     label="State"
                     placeholder="NY"
                     value={state}
-                    onChange={(e) => setState(e.target.value)}
+                    onChange={(e) => { setState(e.target.value); validateFieldLive("state", e.target.value); }}
                     onBlur={handleBlur}
                     error={errors.state}
                     touched={touched}
@@ -422,7 +415,7 @@ export default function CheckoutPage() {
                   label="Zip Code"
                   placeholder="10001"
                   value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
+                  onChange={(e) => { setZipCode(e.target.value); validateFieldLive("zipCode", e.target.value); }}
                   onBlur={handleBlur}
                   error={errors.zipCode}
                   touched={touched}
@@ -435,7 +428,7 @@ export default function CheckoutPage() {
                   type="tel"
                   placeholder="(555) 123-4567"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => { setPhone(e.target.value); validateFieldLive("phone", e.target.value); }}
                   onBlur={handleBlur}
                   error={errors.phone}
                   touched={touched}
