@@ -10,7 +10,18 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/store/cart"
 import { formatPrice } from "@/lib/utils"
-import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin } from "lucide-react"
+import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin, AlertCircle } from "lucide-react"
+
+interface Errors {
+  email?: string
+  firstName?: string
+  lastName?: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  phone?: string
+}
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -26,10 +37,137 @@ export default function CheckoutPage() {
   const [state, setState] = useState("")
   const [zipCode, setZipCode] = useState("")
   const [phone, setPhone] = useState("")
+  const [errors, setErrors] = useState<Errors>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Validation functions
+  const validateEmail = (value: string): string | undefined => {
+    if (!value) return "Email is required"
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(value)) return "Please enter a valid email address"
+    return undefined
+  }
+
+  const validateName = (value: string, fieldName: string): string | undefined => {
+    if (!value) return `${fieldName} is required`
+    if (value.length < 2) return `${fieldName} must be at least 2 characters`
+    if (!/^[a-zA-Z\s'-]+$/.test(value)) return `${fieldName} can only contain letters, spaces, hyphens, and apostrophes`
+    return undefined
+  }
+
+  const validateAddress = (value: string): string | undefined => {
+    if (!value) return "Address is required"
+    if (value.length < 5) return "Please enter a valid address"
+    return undefined
+  }
+
+  const validateCity = (value: string): string | undefined => {
+    if (!value) return "City is required"
+    if (!/^[a-zA-Z\s'-]+$/.test(value)) return "City can only contain letters, spaces, hyphens, and apostrophes"
+    return undefined
+  }
+
+  const validateState = (value: string): string | undefined => {
+    if (!value) return "State is required"
+    if (!/^[a-zA-Z]{2}$/.test(value)) return "State must be 2 letters (e.g., NY)"
+    return undefined
+  }
+
+  const validateZipCode = (value: string): string | undefined => {
+    if (!value) return "Zip code is required"
+    if (!/^\d{5}(-\d{4})?$/.test(value)) return "Zip code must be valid (e.g., 10001 or 10001-1234)"
+    return undefined
+  }
+
+  const validatePhone = (value: string): string | undefined => {
+    if (!value) return undefined // Optional field
+    if (!/^[\d\s()+-]+$/.test(value) || value.replace(/\D/g, "").length < 10) {
+      return "Please enter a valid phone number"
+    }
+    return undefined
+  }
+
+  // Handle field blur
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true })
+    validateField(field)
+  }
+
+  // Validate individual field
+  const validateField = (field: string) => {
+    let error: string | undefined
+
+    switch (field) {
+      case "email":
+        error = validateEmail(email)
+        break
+      case "firstName":
+        error = validateName(firstName, "First Name")
+        break
+      case "lastName":
+        error = validateName(lastName, "Last Name")
+        break
+      case "address":
+        error = validateAddress(address)
+        break
+      case "city":
+        error = validateCity(city)
+        break
+      case "state":
+        error = validateState(state)
+        break
+      case "zipCode":
+        error = validateZipCode(zipCode)
+        break
+      case "phone":
+        error = validatePhone(phone)
+        break
+    }
+
+    if (error) {
+      setErrors({ ...errors, [field]: error })
+    } else {
+      const newErrors = { ...errors }
+      delete newErrors[field as keyof Errors]
+      setErrors(newErrors)
+    }
+  }
+
+  // Validate entire form
+  const validateForm = (): boolean => {
+    const newErrors: Errors = {}
+
+    const emailError = validateEmail(email)
+    if (emailError) newErrors.email = emailError
+
+    const firstNameError = validateName(firstName, "First Name")
+    if (firstNameError) newErrors.firstName = firstNameError
+
+    const lastNameError = validateName(lastName, "Last Name")
+    if (lastNameError) newErrors.lastName = lastNameError
+
+    const addressError = validateAddress(address)
+    if (addressError) newErrors.address = addressError
+
+    const cityError = validateCity(city)
+    if (cityError) newErrors.city = cityError
+
+    const stateError = validateState(state)
+    if (stateError) newErrors.state = stateError
+
+    const zipCodeError = validateZipCode(zipCode)
+    if (zipCodeError) newErrors.zipCode = zipCodeError
+
+    const phoneError = validatePhone(phone)
+    if (phoneError) newErrors.phone = phoneError
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   if (!mounted) {
     return (
@@ -44,7 +182,7 @@ export default function CheckoutPage() {
   }
 
   if (items.length === 0) {
-    router.push('/cart')
+    router.push("/cart")
     return null
   }
 
@@ -53,22 +191,26 @@ export default function CheckoutPage() {
   const total = subtotal + shipping
 
   const handleCheckout = async () => {
-    if (!email) {
-      alert('Please enter your email address')
-      return
-    }
-    
-    if (!firstName || !lastName || !address || !city || !state || !zipCode) {
-      alert('Please fill in all required shipping address fields')
+    if (!validateForm()) {
+      setTouched({
+        email: true,
+        firstName: true,
+        lastName: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        phone: true,
+      })
       return
     }
 
     setLoading(true)
     try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
+      const response = await fetch("/api/checkout", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           items,
@@ -91,14 +233,43 @@ export default function CheckoutPage() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        throw new Error('Failed to create checkout session')
+        throw new Error("Failed to create checkout session")
       }
     } catch (error) {
-      console.error('Checkout error:', error)
-      alert('There was an error processing your checkout. Please try again.')
+      console.error("Checkout error:", error)
+      alert("There was an error processing your checkout. Please try again.")
     } finally {
       setLoading(false)
     }
+  }
+
+  const InputWithError = ({ id, label, value, onChange, onBlur, error, type = "text", placeholder, required, optional }: any) => {
+    const hasError = touched[id] && error
+    return (
+      <div>
+        <Label htmlFor={id}>
+          {label} {required && !optional && "*"} {optional && "(Optional)"}
+        </Label>
+        <Input
+          id={id}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          onBlur={() => {
+            onBlur(id)
+            handleBlur(id)
+          }}
+          className={hasError ? "border-red-500 focus:border-red-500" : ""}
+        />
+        {hasError && (
+          <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+            <AlertCircle className="h-3 w-3" />
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -121,20 +292,18 @@ export default function CheckoutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your order confirmation and tracking info will be sent here.
-                  </p>
-                </div>
+                <InputWithError
+                  id="email"
+                  label="Email Address"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e: any) => setEmail(e.target.value)}
+                  onBlur={() => {}}
+                  error={errors.email}
+                  required={true}
+                />
+                <p className="text-xs text-muted-foreground">Your order confirmation and tracking info will be sent here.</p>
               </CardContent>
             </Card>
 
@@ -144,106 +313,101 @@ export default function CheckoutPage() {
                   <MapPin className="h-5 w-5" />
                   Shipping Address
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Enter the address where you want your order delivered.
-                </p>
+                <p className="text-sm text-muted-foreground mt-2">Enter the address where you want your order delivered.</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      placeholder="John"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      placeholder="Doe"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="address">Address *</Label>
-                  <Input
-                    id="address"
-                    type="text"
-                    placeholder="123 Main Street"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    required
+                  <InputWithError
+                    id="firstName"
+                    label="First Name"
+                    placeholder="John"
+                    value={firstName}
+                    onChange={(e: any) => setFirstName(e.target.value)}
+                    onBlur={() => {}}
+                    error={errors.firstName}
+                    required={true}
+                  />
+                  <InputWithError
+                    id="lastName"
+                    label="Last Name"
+                    placeholder="Doe"
+                    value={lastName}
+                    onChange={(e: any) => setLastName(e.target.value)}
+                    onBlur={() => {}}
+                    error={errors.lastName}
+                    required={true}
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="apartment">Apartment, Suite, etc. (Optional)</Label>
-                  <Input
-                    id="apartment"
-                    type="text"
-                    placeholder="Apt 4B"
-                    value={apartment}
-                    onChange={(e) => setApartment(e.target.value)}
-                  />
-                </div>
+                <InputWithError
+                  id="address"
+                  label="Address"
+                  placeholder="123 Main Street"
+                  value={address}
+                  onChange={(e: any) => setAddress(e.target.value)}
+                  onBlur={() => {}}
+                  error={errors.address}
+                  required={true}
+                />
+
+                <InputWithError
+                  id="apartment"
+                  label="Apartment, Suite, etc."
+                  placeholder="Apt 4B"
+                  value={apartment}
+                  onChange={(e: any) => setApartment(e.target.value)}
+                  onBlur={() => {}}
+                  error={errors.apartment}
+                  optional={true}
+                />
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
-                    <Label htmlFor="city">City *</Label>
-                    <Input
+                    <InputWithError
                       id="city"
-                      type="text"
+                      label="City"
                       placeholder="New York"
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      required
+                      onChange={(e: any) => setCity(e.target.value)}
+                      onBlur={() => {}}
+                      error={errors.city}
+                      required={true}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      type="text"
-                      placeholder="NY"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="zipCode">Zip Code *</Label>
-                  <Input
-                    id="zipCode"
-                    type="text"
-                    placeholder="10001"
-                    value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
-                    required
+                  <InputWithError
+                    id="state"
+                    label="State"
+                    placeholder="NY"
+                    value={state}
+                    onChange={(e: any) => setState(e.target.value)}
+                    onBlur={() => {}}
+                    error={errors.state}
+                    required={true}
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="phone">Phone Number (Optional)</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(555) 123-4567"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
+                <InputWithError
+                  id="zipCode"
+                  label="Zip Code"
+                  placeholder="10001"
+                  value={zipCode}
+                  onChange={(e: any) => setZipCode(e.target.value)}
+                  onBlur={() => {}}
+                  error={errors.zipCode}
+                  required={true}
+                />
+
+                <InputWithError
+                  id="phone"
+                  label="Phone Number"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={phone}
+                  onChange={(e: any) => setPhone(e.target.value)}
+                  onBlur={() => {}}
+                  error={errors.phone}
+                  optional={true}
+                />
               </CardContent>
             </Card>
 
@@ -271,9 +435,7 @@ export default function CheckoutPage() {
                 <div className="text-sm text-yellow-800">
                   <p className="font-semibold mb-1">Research Use Acknowledgment</p>
                   <p>
-                    By completing this purchase, I acknowledge that all products ordered are intended 
-                    for laboratory research purposes only and not for human consumption. I confirm that 
-                    I am at least 21 years of age and agree to the Terms of Service.
+                    By completing this purchase, I acknowledge that all products ordered are intended for laboratory research purposes only and not for human consumption. I confirm that I am at least 21 years of age and agree to the Terms of Service.
                   </p>
                 </div>
               </div>
@@ -292,7 +454,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
+                  <span>{shipping === 0 ? "FREE" : formatPrice(shipping)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
@@ -301,12 +463,7 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-4">
-                <Button 
-                  className="w-full" 
-                  size="lg" 
-                  onClick={handleCheckout}
-                  disabled={loading || !email || !firstName || !lastName || !address || !city || !state || !zipCode}
-                >
+                <Button className="w-full" size="lg" onClick={handleCheckout} disabled={loading}>
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
