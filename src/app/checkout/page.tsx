@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/store/cart"
 import { formatPrice } from "@/lib/utils"
-import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin, AlertCircle } from "lucide-react"
+import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin, AlertCircle, Tag, X } from "lucide-react"
 
 interface Errors {
   email?: string
@@ -92,6 +92,10 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("")
   const [errors, setErrors] = useState<Errors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [couponCode, setCouponCode] = useState("")
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -234,7 +238,46 @@ export default function CheckoutPage() {
 
   const subtotal = getTotal()
   const shipping = subtotal >= 20000 ? 0 : 1500
-  const total = subtotal + shipping
+  const discount = appliedCoupon ? appliedCoupon.discount : 0
+  const total = subtotal + shipping - discount
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code")
+      return
+    }
+
+    setCouponLoading(true)
+    setCouponError("")
+    
+    try {
+      const response = await fetch("/api/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode.trim(), subtotal }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setAppliedCoupon({ code: couponCode.trim(), discount: data.discount })
+        setCouponCode("")
+      } else {
+        setCouponError(data.message || "Invalid coupon code")
+      }
+    } catch (error) {
+      setCouponError("Error validating coupon. Please try again.")
+      console.error("Coupon error:", error)
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponCode("")
+    setCouponError("")
+  }
 
   const handleCheckout = async () => {
     if (!validateForm()) {
@@ -482,7 +525,60 @@ export default function CheckoutPage() {
                   <span>Shipping</span>
                   <span>{shipping === 0 ? "FREE" : formatPrice(shipping)}</span>
                 </div>
+
+                {!appliedCoupon ? (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Coupon code"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase())
+                          setCouponError("")
+                        }}
+                        onKeyPress={(e) => e.key === "Enter" && handleApplyCoupon()}
+                        className="text-sm"
+                      />
+                      <Button
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        size="sm"
+                        variant="outline"
+                      >
+                        {couponLoading ? "..." : "Apply"}
+                      </Button>
+                    </div>
+                    {couponError && (
+                      <div className="flex items-center gap-1 text-red-500 text-xs">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>{couponError}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-800">{appliedCoupon.code}</span>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
                 <Separator />
+
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span>Discount</span>
+                    <span>-{formatPrice(discount)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
                   <span>{formatPrice(total)}</span>
