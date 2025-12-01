@@ -244,7 +244,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const InputWithError = ({ id, label, value, onChange, onBlur, error, type = "text", placeholder, required, optional }: any) => {
+  const InputWithError = ({ id, label, value, onChange, error, type = "text", placeholder, required, optional }: any) => {
     const hasError = touched[id] && error
     return (
       <div>
@@ -257,10 +257,7 @@ export default function CheckoutPage() {
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          onBlur={() => {
-            onBlur(id)
-            handleBlur(id)
-          }}
+          onBlur={() => handleBlur(id)}
           className={hasError ? "border-red-500 focus:border-red-500" : ""}
         />
         {hasError && (
@@ -300,7 +297,6 @@ export default function CheckoutPage() {
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e: any) => setEmail(e.target.value)}
-                  onBlur={() => {}}
                   error={errors.email}
                   required={true}
                 />
@@ -324,7 +320,6 @@ export default function CheckoutPage() {
                     placeholder="John"
                     value={firstName}
                     onChange={(e: any) => setFirstName(e.target.value)}
-                    onBlur={() => {}}
                     error={errors.firstName}
                     required={true}
                   />
@@ -334,7 +329,6 @@ export default function CheckoutPage() {
                     placeholder="Doe"
                     value={lastName}
                     onChange={(e: any) => setLastName(e.target.value)}
-                    onBlur={() => {}}
                     error={errors.lastName}
                     required={true}
                   />
@@ -346,7 +340,6 @@ export default function CheckoutPage() {
                   placeholder="123 Main Street"
                   value={address}
                   onChange={(e: any) => setAddress(e.target.value)}
-                  onBlur={() => {}}
                   error={errors.address}
                   required={true}
                 />
@@ -357,7 +350,6 @@ export default function CheckoutPage() {
                   placeholder="Apt 4B"
                   value={apartment}
                   onChange={(e: any) => setApartment(e.target.value)}
-                  onBlur={() => {}}
                   error={errors.apartment}
                   optional={true}
                 />
@@ -370,7 +362,6 @@ export default function CheckoutPage() {
                       placeholder="New York"
                       value={city}
                       onChange={(e: any) => setCity(e.target.value)}
-                      onBlur={() => {}}
                       error={errors.city}
                       required={true}
                     />
@@ -381,7 +372,6 @@ export default function CheckoutPage() {
                     placeholder="NY"
                     value={state}
                     onChange={(e: any) => setState(e.target.value)}
-                    onBlur={() => {}}
                     error={errors.state}
                     required={true}
                   />
@@ -393,7 +383,6 @@ export default function CheckoutPage() {
                   placeholder="10001"
                   value={zipCode}
                   onChange={(e: any) => setZipCode(e.target.value)}
-                  onBlur={() => {}}
                   error={errors.zipCode}
                   required={true}
                 />
@@ -405,7 +394,6 @@ export default function CheckoutPage() {
                   placeholder="(555) 123-4567"
                   value={phone}
                   onChange={(e: any) => setPhone(e.target.value)}
-                  onBlur={() => {}}
                   error={errors.phone}
                   optional={true}
                 />
