@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { ProductDetails } from "./ProductDetails"
+import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd"
 
 interface PageProps {
   params: { slug: string }
@@ -53,8 +54,31 @@ export default async function ProductPage({ params }: PageProps) {
   }
 
   const relatedProducts = await getRelatedProducts(product.categoryId, product.id)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peptidelabs.com"
+  const lowestPrice = product.variants.length > 0 ? product.variants[0].price : 0
 
-  return <ProductDetails product={product} relatedProducts={relatedProducts} />
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Peptides", url: `${baseUrl}/peptides` },
+    { name: product.category.name, url: `${baseUrl}/peptides?category=${product.category.slug}` },
+    { name: product.name, url: `${baseUrl}/peptides/${product.slug}` },
+  ]
+
+  return (
+    <>
+      <ProductJsonLd
+        name={product.name}
+        description={product.shortDescription || product.description.substring(0, 160)}
+        image={product.images[0]}
+        sku={product.sku}
+        price={lowestPrice}
+        category={product.category.name}
+        url={`${baseUrl}/peptides/${product.slug}`}
+      />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <ProductDetails product={product} relatedProducts={relatedProducts} />
+    </>
+  )
 }
 
 export async function generateMetadata({ params }: PageProps) {

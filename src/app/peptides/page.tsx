@@ -1,12 +1,25 @@
+import { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
 import { ProductCard } from "@/components/products/ProductCard"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd"
 import Link from "next/link"
 import { Search, Filter } from "lucide-react"
 
 interface PageProps {
   searchParams: Promise<{ category?: string; search?: string; sort?: string }>
+}
+
+export const metadata: Metadata = {
+  title: "Research Peptides | Laboratory Grade Peptides - PeptideLabs",
+  description: "Browse our comprehensive collection of premium research-grade peptides for scientific research. All products are rigorously tested for purity. For research use only.",
+  openGraph: {
+    title: "Research Peptides | PeptideLabs",
+    description: "Browse our comprehensive collection of premium research-grade peptides for scientific research.",
+    type: "website",
+  },
+  keywords: "research peptides, laboratory peptides, scientific peptides, peptide research, research chemicals",
 }
 
 async function getProducts(category?: string, search?: string, sort?: string) {
@@ -67,9 +80,21 @@ export default async function PeptidesPage({ searchParams }: PageProps) {
   const { category, search, sort } = params
   const products = await getProducts(category, search, sort)
   const categories = await getCategories()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peptidelabs.com"
+
+  const breadcrumbItems = [
+    { name: "Home", url: baseUrl },
+    { name: "Peptides", url: `${baseUrl}/peptides` },
+    ...(category ? [{
+      name: categories.find(c => c.slug === category)?.name || category,
+      url: `${baseUrl}/peptides?category=${category}`
+    }] : [])
+  ]
 
   return (
-    <div className="py-8">
+    <>
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <div className="py-8">
       <div className="container-custom">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Research Peptides</h1>
@@ -178,5 +203,6 @@ export default async function PeptidesPage({ searchParams }: PageProps) {
         </div>
       </div>
     </div>
+    </>
   )
 }

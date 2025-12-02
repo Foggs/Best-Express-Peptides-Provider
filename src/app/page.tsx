@@ -1,8 +1,10 @@
+import { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProductCard } from "@/components/products/ProductCard"
+import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd"
 import { prisma } from "@/lib/prisma"
 import { 
   FlaskConical, 
@@ -14,6 +16,17 @@ import {
   CheckCircle,
   Beaker
 } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "PeptideLabs | Premium Research-Grade Peptides for Scientific Research",
+  description: "Discover our comprehensive collection of laboratory-grade research peptides. 99%+ purity verified, fast shipping, and certificates of analysis. For research use only.",
+  openGraph: {
+    title: "PeptideLabs | Premium Research-Grade Peptides",
+    description: "Discover our comprehensive collection of laboratory-grade research peptides. 99%+ purity verified.",
+    type: "website",
+  },
+  keywords: "research peptides, laboratory peptides, peptide research, scientific peptides, USA peptides, HPLC verified peptides",
+}
 
 async function getFeaturedProducts() {
   try {
@@ -54,7 +67,10 @@ export default async function HomePage() {
   const categories = await getCategories()
 
   return (
-    <div>
+    <>
+      <OrganizationJsonLd />
+      <WebsiteJsonLd />
+      <div>
       <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 to-transparent"></div>
@@ -283,5 +299,6 @@ export default async function HomePage() {
         </div>
       </section>
     </div>
+    </>
   )
 }
