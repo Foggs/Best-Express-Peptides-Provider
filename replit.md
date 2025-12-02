@@ -69,3 +69,24 @@ Required environment variables:
 
 ## Research Use Disclaimer
 All products are clearly labeled "For Research Use Only - Not for Human Consumption" as required.
+
+## SEO Features
+- Dynamic sitemap.xml with products, categories, and static pages
+- JSON-LD structured data (Product, BreadcrumbList, Organization, Website schemas)
+- Dynamic metadata with Open Graph and Twitter cards
+- SEO-optimized 404 page with contextual links
+- All pages have unique titles and descriptions
+
+## Accessibility Features
+- ARIA labels on all navigation elements and interactive components
+- Skip-to-content link for keyboard navigation
+- Visible focus indicators for keyboard users
+- ScreenReaderAnnouncer component for cart updates (aria-live regions)
+- Semantic HTML structure with proper heading hierarchy
+- Descriptive alt text on all images
+
+## Recent Changes (December 2024)
+- Fixed sitemap.xml to only include existing pages (removed /about, /contact, /faq)
+- Corrected /refund-policy to /refund in sitemap
+- Updated Footer navigation to match existing pages
+- Comprehensive SEO and accessibility audit completed
