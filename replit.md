@@ -90,6 +90,8 @@ All products are clearly labeled "For Research Use Only - Not for Human Consumpt
 - **React cache()**: Applied to getFeaturedProducts, getCategoriesWithCount, getProductBySlug, getRelatedProducts for request deduplication
 - **Removed unused dependencies**: Pruned 5 unused Radix UI packages (accordion, avatar, checkbox, dropdown-menu, navigation-menu)
 - **Centralized data access**: All product queries go through src/lib/queries.ts for consistent optimization
+- **Static SVG icons**: Created src/components/icons/index.tsx with static SVG components for frequently used icons (FlaskIcon, CartIcon, MenuIcon, CloseIcon, UserIcon, WarningIcon, MailIcon, PhoneIcon) - reduces lucide-react bundle impact
+- **Cart store hydration**: Implemented _hasHydrated flag with onRehydrateStorage callback to prevent SSR/client hydration mismatches
 
 ## Recent Changes (December 2024)
 - Fixed sitemap.xml to only include existing pages (removed /about, /contact, /faq)
@@ -97,3 +99,5 @@ All products are clearly labeled "For Research Use Only - Not for Human Consumpt
 - Updated Footer navigation to match existing pages
 - Comprehensive SEO and accessibility audit completed
 - Performance optimizations: query optimization, caching, dependency cleanup
+- Added static SVG icons to reduce bundle size
+- Implemented cart store lazy hydration pattern
