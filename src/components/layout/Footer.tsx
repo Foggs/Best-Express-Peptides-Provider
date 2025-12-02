@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FlaskConical, Mail, Phone } from "lucide-react"
+import { FlaskIcon, MailIcon, PhoneIcon } from "@/components/icons"
 import { Separator } from "@/components/ui/separator"
 
 export function Footer() {
@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <FlaskConical className="h-6 w-6 text-primary" aria-hidden="true" />
+              <FlaskIcon size={24} className="text-primary" />
               <span className="text-lg font-bold text-white">PeptideLabs</span>
             </div>
             <p className="text-sm">
@@ -17,11 +17,11 @@ export function Footer() {
             </p>
             <address className="not-italic space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4" aria-hidden="true" />
+                <MailIcon size={16} />
                 <a href="mailto:support@peptidelabs.com" className="hover:text-primary transition-colors">support@peptidelabs.com</a>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4" aria-hidden="true" />
+                <PhoneIcon size={16} />
                 <a href="tel:1-800-737-8433" className="hover:text-primary transition-colors">1-800-PEPTIDE</a>
               </div>
             </address>

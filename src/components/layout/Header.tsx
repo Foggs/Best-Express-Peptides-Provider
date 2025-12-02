@@ -2,15 +2,15 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { ShoppingCart, Menu, X, User, FlaskConical } from "lucide-react"
+import { FlaskIcon, CartIcon, MenuIcon, CloseIcon, UserIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/cart"
 import { useSession, signIn, signOut } from "next-auth/react"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { items } = useCartStore()
-  const itemCount = items.reduce((acc, item) => acc + item.quantity, 0)
+  const { items, _hasHydrated } = useCartStore()
+  const itemCount = _hasHydrated ? items.reduce((acc, item) => acc + item.quantity, 0) : 0
   const { data: session } = useSession()
 
   return (
@@ -19,7 +19,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2" aria-label="PeptideLabs - Home">
-              <FlaskConical className="h-8 w-8 text-primary" aria-hidden="true" />
+              <FlaskIcon size={32} className="text-primary" />
               <span className="text-xl font-bold text-primary">PeptideLabs</span>
             </Link>
             
@@ -44,7 +44,7 @@ export function Header() {
               <div className="hidden md:flex items-center gap-4">
                 <Link href="/account">
                   <Button variant="ghost" size="sm">
-                    <User className="h-4 w-4 mr-2" />
+                    <UserIcon size={16} className="mr-2" />
                     Account
                   </Button>
                 </Link>
@@ -60,7 +60,7 @@ export function Header() {
 
             <Link href="/cart" className="relative" aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}>
               <Button variant="outline" size="icon" aria-label="View cart">
-                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+                <CartIcon size={20} />
                 {itemCount > 0 && (
                   <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center" aria-hidden="true">
                     {itemCount}
@@ -76,7 +76,7 @@ export function Header() {
               aria-controls="mobile-menu"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+              {mobileMenuOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
             </button>
           </div>
         </div>
