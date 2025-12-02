@@ -58,11 +58,11 @@ export function Header() {
               </Button>
             )}
 
-            <Link href="/cart" className="relative">
-              <Button variant="outline" size="icon">
-                <ShoppingCart className="h-5 w-5" />
+            <Link href="/cart" className="relative" aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}>
+              <Button variant="outline" size="icon" aria-label="View cart">
+                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center" aria-hidden="true">
                     {itemCount}
                   </span>
                 )}
@@ -72,15 +72,18 @@ export function Header() {
             <button
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
             </button>
           </div>
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            <nav className="flex flex-col gap-4">
+          <div id="mobile-menu" className="md:hidden py-4 border-t">
+            <nav className="flex flex-col gap-4" aria-label="Mobile navigation">
               <Link href="/peptides" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                 All Peptides
               </Link>

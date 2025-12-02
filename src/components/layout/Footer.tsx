@@ -4,28 +4,30 @@ import { Separator } from "@/components/ui/separator"
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-gray-900 text-gray-300" role="contentinfo">
       <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <FlaskConical className="h-6 w-6 text-primary" />
+              <FlaskConical className="h-6 w-6 text-primary" aria-hidden="true" />
               <span className="text-lg font-bold text-white">PeptideLabs</span>
             </div>
             <p className="text-sm">
               Premium research peptides for scientific study. All products are for research purposes only.
             </p>
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4" />
-              <span>support@peptidelabs.com</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4" />
-              <span>1-800-PEPTIDE</span>
-            </div>
+            <address className="not-italic space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Mail className="h-4 w-4" aria-hidden="true" />
+                <a href="mailto:support@peptidelabs.com" className="hover:text-primary transition-colors">support@peptidelabs.com</a>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4" aria-hidden="true" />
+                <a href="tel:1-800-737-8433" className="hover:text-primary transition-colors">1-800-PEPTIDE</a>
+              </div>
+            </address>
           </div>
 
-          <div>
+          <nav aria-label="Product categories">
             <h3 className="font-semibold text-white mb-4">Products</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/peptides" className="hover:text-primary transition-colors">All Peptides</Link></li>
@@ -34,9 +36,9 @@ export function Footer() {
               <li><Link href="/peptides?category=weight-loss" className="hover:text-primary transition-colors">Weight Loss</Link></li>
               <li><Link href="/peptides?category=cognitive" className="hover:text-primary transition-colors">Cognitive</Link></li>
             </ul>
-          </div>
+          </nav>
 
-          <div>
+          <nav aria-label="Company information">
             <h3 className="font-semibold text-white mb-4">Information</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
@@ -44,9 +46,9 @@ export function Footer() {
               <li><Link href="/faq" className="hover:text-primary transition-colors">FAQ</Link></li>
               <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
             </ul>
-          </div>
+          </nav>
 
-          <div>
+          <nav aria-label="Legal information">
             <h3 className="font-semibold text-white mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
@@ -54,7 +56,7 @@ export function Footer() {
               <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
               <li><Link href="/refund" className="hover:text-primary transition-colors">Refund and Cancellation Policy</Link></li>
             </ul>
-          </div>
+          </nav>
         </div>
 
         <Separator className="my-8 bg-gray-700" />
