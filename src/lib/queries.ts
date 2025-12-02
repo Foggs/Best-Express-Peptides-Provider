@@ -61,75 +61,76 @@ export const getCategoriesWithCount = cache(async () => {
   }
 })
 
-export const getProducts = cache(async (options?: {
+export async function getProducts(options?: {
   category?: string
   search?: string
   sort?: string
-}) => {
-  try {
-    const where: any = { active: true }
-    
-    if (options?.category) {
-      where.category = { slug: options.category }
-    }
-    
-    if (options?.search) {
-      where.OR = [
-        { name: { contains: options.search, mode: 'insensitive' } },
-        { shortDescription: { contains: options.search, mode: 'insensitive' } },
-      ]
-    }
-
-    let orderBy: any = { createdAt: 'desc' }
-    if (options?.sort === 'price-asc') {
-      orderBy = { variants: { _min: { price: 'asc' } } }
-    } else if (options?.sort === 'price-desc') {
-      orderBy = { variants: { _max: { price: 'desc' } } }
-    } else if (options?.sort === 'name') {
-      orderBy = { name: 'asc' }
-    }
-
-    return await prisma.product.findMany({
-      where,
-      select: productListSelect,
-      orderBy,
-    })
-  } catch (error) {
-    console.error('Error fetching products:', error)
-    return []
+}) {
+  const where: any = { active: true }
+  
+  if (options?.category) {
+    where.category = { slug: options.category }
   }
-})
+  
+  if (options?.search) {
+    where.OR = [
+      { name: { contains: options.search, mode: 'insensitive' } },
+      { shortDescription: { contains: options.search, mode: 'insensitive' } },
+    ]
+  }
+
+  let orderBy: any = { createdAt: 'desc' }
+  if (options?.sort === 'price-asc') {
+    orderBy = { name: 'asc' }
+  } else if (options?.sort === 'price-desc') {
+    orderBy = { name: 'desc' }
+  } else if (options?.sort === 'name') {
+    orderBy = { name: 'asc' }
+  }
+
+  const products = await prisma.product.findMany({
+    where,
+    select: productListSelect,
+    orderBy,
+  })
+
+  if (options?.sort === 'price-asc') {
+    return products.sort((a, b) => {
+      const aMin = Math.min(...a.variants.map(v => v.price))
+      const bMin = Math.min(...b.variants.map(v => v.price))
+      return aMin - bMin
+    })
+  } else if (options?.sort === 'price-desc') {
+    return products.sort((a, b) => {
+      const aMax = Math.max(...a.variants.map(v => v.price))
+      const bMax = Math.max(...b.variants.map(v => v.price))
+      return bMax - aMax
+    })
+  }
+
+  return products
+}
 
 export const getProductBySlug = cache(async (slug: string) => {
-  try {
-    return await prisma.product.findUnique({
-      where: { slug },
-      include: {
-        category: true,
-        variants: {
-          orderBy: { price: 'asc' },
-        },
+  return await prisma.product.findUnique({
+    where: { slug },
+    include: {
+      category: true,
+      variants: {
+        orderBy: { price: 'asc' },
       },
-    })
-  } catch (error) {
-    console.error('Error fetching product:', error)
-    return null
-  }
+    },
+  })
 })
 
 export const getRelatedProducts = cache(async (categoryId: string, excludeProductId: string) => {
-  try {
-    return await prisma.product.findMany({
-      where: {
-        categoryId,
-        id: { not: excludeProductId },
-        active: true,
-      },
-      select: productListSelect,
-      take: 4,
-    })
-  } catch (error) {
-    console.error('Error fetching related products:', error)
-    return []
-  }
+  return await prisma.product.findMany({
+    where: {
+      categoryId,
+      id: { not: excludeProductId },
+      active: true,
+    },
+    select: productListSelect,
+    take: 4,
+  })
 })
