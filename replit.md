@@ -85,8 +85,15 @@ All products are clearly labeled "For Research Use Only - Not for Human Consumpt
 - Semantic HTML structure with proper heading hierarchy
 - Descriptive alt text on all images
 
+## Performance Optimizations
+- **Optimized Prisma queries**: Product listings use select clauses to fetch only necessary fields (excludes large text blobs like description, research, coa, faq)
+- **React cache()**: Applied to getFeaturedProducts, getCategoriesWithCount, getProductBySlug, getRelatedProducts for request deduplication
+- **Removed unused dependencies**: Pruned 5 unused Radix UI packages (accordion, avatar, checkbox, dropdown-menu, navigation-menu)
+- **Centralized data access**: All product queries go through src/lib/queries.ts for consistent optimization
+
 ## Recent Changes (December 2024)
 - Fixed sitemap.xml to only include existing pages (removed /about, /contact, /faq)
 - Corrected /refund-policy to /refund in sitemap
 - Updated Footer navigation to match existing pages
 - Comprehensive SEO and accessibility audit completed
+- Performance optimizations: query optimization, caching, dependency cleanup
