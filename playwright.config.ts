@@ -6,16 +6,23 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html'], ['list']],
+  timeout: 60000,
   use: {
     baseURL: 'http://localhost:5000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    launchOptions: {
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+    },
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        channel: undefined,
+      },
     },
   ],
   webServer: {
