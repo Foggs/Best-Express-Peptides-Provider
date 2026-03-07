@@ -1,19 +1,21 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server"
+import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
+import { getCachedProducts, getCacheStatus } from "@/lib/productCache"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await verifyAdminAuth(request)
+  if (!auth.valid) {
+    return createUnauthorizedResponse()
+  }
+
   try {
-    const products = await prisma.product.findMany({
-      include: {
-        category: true,
-        variants: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
+    const products = await getCachedProducts()
+    const status = getCacheStatus()
 
-    return NextResponse.json(products)
+    return NextResponse.json({
+      products,
+      cacheStatus: status,
+    })
   } catch (error) {
     console.error("Error fetching products:", error)
     return NextResponse.json({ error: "Error fetching products" }, { status: 500 })
