@@ -1,29 +1,33 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import Cookies from "js-cookie"
+import { useState, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { FlaskIcon, WarningIcon } from "@/components/icons"
 
-export function AgeVerification() {
-  const [status, setStatus] = useState<"loading" | "needs-verification" | "verified">("loading")
+let isVerified: boolean | null = null
 
-  useEffect(() => {
-    const cookie = Cookies.get("age-verified")
-    setStatus(cookie === "true" ? "verified" : "needs-verification")
-  }, [])
+function checkVerified(): boolean {
+  if (isVerified !== null) return isVerified
+  if (typeof window === "undefined") return true
+  isVerified = sessionStorage.getItem("age-verified") === "true"
+  return isVerified
+}
+
+export function AgeVerification() {
+  const [verified, setVerified] = useState(() => checkVerified())
 
   const handleVerify = useCallback(() => {
-    Cookies.set("age-verified", "true", { expires: 30, path: "/" })
-    setStatus("verified")
+    sessionStorage.setItem("age-verified", "true")
+    isVerified = true
+    setVerified(true)
   }, [])
 
   const handleDecline = useCallback(() => {
     window.location.href = "https://www.google.com"
   }, [])
 
-  if (status !== "needs-verification") {
+  if (verified) {
     return null
   }
 
