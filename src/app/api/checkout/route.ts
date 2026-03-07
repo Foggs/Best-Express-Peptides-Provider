@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import Stripe from "stripe"
-import { prisma } from "@/lib/prisma"
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit"
-
-function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2025-02-24.acacia",
-  })
-}
+import { sendOrderEmail } from "@/lib/orderEmail"
 
 export async function POST(request: NextRequest) {
-  const stripe = getStripe()
   const rateLimitResult = rateLimit(request, 50, 60000)
   if (!rateLimitResult.success) {
     return NextResponse.json(
-      { error: "Too many checkout requests. Please try again later." },
+      { error: "Too many requests. Please try again later." },
       { 
         status: 429,
         headers: getRateLimitHeaders(rateLimitResult.remaining, 50),
@@ -34,82 +26,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 })
     }
 
-    const lineItems = items.map((item: any) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: `${item.name} - ${item.variantName}`,
-          description: "For Research Use Only",
-        },
-        unit_amount: item.price,
-      },
-      quantity: item.quantity,
-    }))
+    if (!shippingAddress || !shippingAddress.firstName || !shippingAddress.lastName || !shippingAddress.address || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode) {
+      return NextResponse.json({ error: "Complete shipping address is required" }, { status: 400 })
+    }
 
     const subtotal = items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0)
     const shipping = subtotal >= 20000 ? 0 : 1500
     const discount = coupon ? coupon.discount : 0
+    const total = subtotal + shipping - discount
 
-    if (shipping > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: "Shipping",
-            description: "Standard shipping (2-3 business days)",
-          },
-          unit_amount: shipping,
-        },
-        quantity: 1,
-      })
-    }
-
-    if (discount > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: `Discount (${coupon.code})`,
-            description: "Coupon applied",
-          },
-          unit_amount: -discount,
-        },
-        quantity: 1,
-      })
-    }
-
-    const host = request.headers.get("host")
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http"
-    const baseUrl = `${protocol}://${host}`
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      mode: "payment",
-      success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/cart`,
-      customer_email: email,
-      metadata: {
-        items: JSON.stringify(items.map((item: any) => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          price: item.price,
-        }))),
-        shippingAddress: JSON.stringify(shippingAddress),
-        couponCode: coupon?.code || "",
-        discount: discount.toString(),
-      },
+    const emailResult = await sendOrderEmail({
+      email,
+      items: items.map((item: any) => ({
+        name: item.name,
+        variantName: item.variantName,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      shippingAddress,
+      subtotal,
+      shipping,
+      discount,
+      total,
+      couponCode: coupon?.code,
     })
 
-    return NextResponse.json({ url: session.url }, {
-      headers: getRateLimitHeaders(rateLimitResult.remaining, 50),
-    })
+    if (!emailResult.success) {
+      console.error("Failed to send order email:", emailResult.error)
+      return NextResponse.json(
+        { error: "Failed to submit order. Please try again." },
+        { 
+          status: 500,
+          headers: getRateLimitHeaders(rateLimitResult.remaining, 50),
+        }
+      )
+    }
+
+    return NextResponse.json(
+      { success: true, message: "Order submitted successfully" },
+      { headers: getRateLimitHeaders(rateLimitResult.remaining, 50) }
+    )
   } catch (error) {
     console.error("Checkout error:", error)
     const message = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Error creating checkout session", details: message },
+      { error: "Error submitting order", details: message },
       { 
         status: 500,
         headers: getRateLimitHeaders(rateLimitResult.remaining, 50),

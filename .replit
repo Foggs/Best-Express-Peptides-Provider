@@ -15,6 +15,7 @@ NEXTAUTH_URL = "https://localhost:5000"
 NEXT_PUBLIC_GA_ID = "G-XXXXXXXXXX"
 GOOGLE_SHEET_ID = "1kUInxIBWDL2XdSS5WeRtrRhYzxHYzWVUiU8vNjY8dHA"
 NEXT_PUBLIC_GOOGLE_SHEET_ID = "1kUInxIBWDL2XdSS5WeRtrRhYzxHYzWVUiU8vNjY8dHA"
+ADMIN_EMAIL = "info.oggo@gmail.com"
 
 [workflows]
 runButton = "Project"

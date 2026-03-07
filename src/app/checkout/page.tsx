@@ -330,14 +330,19 @@ export default function CheckoutPage() {
 
       const data = await response.json()
 
-      if (data.url) {
-        window.location.href = data.url
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit order")
+      }
+
+      if (data.success) {
+        window.location.href = "/checkout/success"
       } else {
-        throw new Error("Failed to create checkout session")
+        throw new Error("Failed to submit order")
       }
     } catch (error) {
       console.error("Checkout error:", error)
-      alert("There was an error processing your checkout. Please try again.")
+      const message = error instanceof Error ? error.message : "There was an error submitting your order."
+      alert(message + " Please try again.")
     } finally {
       setLoading(false)
     }
@@ -619,13 +624,13 @@ export default function CheckoutPage() {
                   ) : (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
-                      Pay with Stripe
+                      Submit Order
                     </>
                   )}
                 </Button>
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Lock className="h-3 w-3" />
-                  Secured by Stripe - 256-bit SSL
+                  Your order details will be sent securely
                 </div>
               </CardFooter>
             </Card>

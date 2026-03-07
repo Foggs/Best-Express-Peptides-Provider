@@ -25,17 +25,17 @@ export default function CheckoutSuccessPage() {
             
             <h1 className="text-3xl font-bold mb-4">Thank You for Your Order!</h1>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Your order has been successfully placed. You will receive a confirmation email shortly with your order details and tracking information.
+              Your order has been submitted successfully. Our team will review your order and reach out to you with payment details and next steps.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
               <div className="bg-gray-50 rounded-lg p-4 text-left">
                 <div className="flex items-center gap-3 mb-2">
                   <Mail className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">Confirmation Email</span>
+                  <span className="font-semibold">What Happens Next</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Check your inbox for order details and receipt.
+                  You will be contacted with payment instructions and order confirmation.
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-left">
@@ -44,7 +44,7 @@ export default function CheckoutSuccessPage() {
                   <span className="font-semibold">Shipping</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Your order will ship within 1-2 business days.
+                  Your order will ship within 1-2 business days after payment is confirmed.
                 </p>
               </div>
             </div>
@@ -61,11 +61,6 @@ export default function CheckoutSuccessPage() {
                 <Link href="/peptides">
                   Continue Shopping
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/account">
-                  View Order History
                 </Link>
               </Button>
             </div>

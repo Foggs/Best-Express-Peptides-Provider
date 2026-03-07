@@ -7,20 +7,40 @@ A production-ready e-commerce website for selling research peptides built with N
 - **Frontend**: Next.js 15 (App Router), React 18, TypeScript
 - **Styling**: Tailwind CSS, shadcn/ui components
 - **State Management**: Zustand (cart persistence)
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM (orders/users only)
+- **Product Data**: Google Sheets (single source of truth) with in-memory TTL cache
 - **Authentication**: NextAuth.js (email/password + Google)
-- **Payments**: Stripe Checkout
+- **Order Notifications**: Resend (emails order details to admin)
+- **Payments**: Stripe Checkout (currently disabled, kept for future re-enablement)
 - **Validation**: Zod, React Hook Form
+
+## Architecture Notes
+
+### Product Data Flow
+- Products and variants are managed in a Google Sheet (ID: set via `GOOGLE_SHEET_ID` env var)
+- Two tabs: "Products" (slug, name, category, etc.) and "Variants" (productSlug, variantName, price, sku, stock)
+- `src/lib/productCache.ts` provides in-memory caching with 5-minute TTL
+- Admin can force-refresh cache from the admin dashboard
+- Prisma/DB is NOT used for products — only for users, orders, sessions, coupons, categories
+
+### Checkout Flow
+- Customer fills out shipping form and clicks "Submit Order"
+- Server sends a formatted HTML email to the admin via Resend with full order details
+- No payment is collected at checkout — admin contacts customer for payment
+- Stripe code has been removed from checkout (webhook route returns 503)
 
 ## Project Structure
 ```
 src/
 ├── app/                    # Next.js App Router pages
 │   ├── api/               # API routes
+│   │   ├── checkout/      # Email-based order submission
+│   │   ├── admin/         # Admin APIs (refresh-products, etc.)
+│   │   └── webhook/       # Stripe webhook (disabled)
 │   ├── admin/             # Admin dashboard
 │   ├── auth/              # Authentication pages
 │   ├── cart/              # Shopping cart
-│   ├── checkout/          # Checkout flow
+│   ├── checkout/          # Checkout flow + success page
 │   ├── peptides/          # Product catalog
 │   └── [legal pages]      # Terms, Privacy, etc.
 ├── components/
@@ -28,7 +48,13 @@ src/
 │   ├── products/          # Product components
 │   └── ui/                # shadcn/ui components
 ├── hooks/                 # Custom React hooks
-├── lib/                   # Utilities, Prisma client
+├── lib/
+│   ├── googleSheets.ts    # Google Sheets OAuth client
+│   ├── productCache.ts    # In-memory product cache (5-min TTL)
+│   ├── resend.ts          # Resend email client
+│   ├── orderEmail.ts      # Order notification email template + sender
+│   ├── prisma.ts          # Prisma client (orders/users only)
+│   └── queries.ts         # DB queries (orders only)
 ├── store/                 # Zustand stores
 └── types/                 # TypeScript types
 ```
@@ -38,8 +64,9 @@ Required environment variables:
 - `DATABASE_URL` - PostgreSQL connection string (auto-configured by Replit)
 - `NEXTAUTH_SECRET` - Secret for NextAuth.js
 - `NEXTAUTH_URL` - Base URL for authentication
-- `STRIPE_SECRET_KEY` - Stripe secret key
-- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
+- `GOOGLE_SHEET_ID` - Google Sheet ID for product data
+- `RESEND_API_KEY` - Resend API key for sending order emails
+- `ADMIN_EMAIL` - Email address to receive order notifications
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID (optional)
 - `GOOGLE_CLIENT_SECRET` - Google OAuth secret (optional)
 
@@ -47,27 +74,27 @@ Required environment variables:
 - `npm run dev` - Start development server on port 5000
 - `npm run build` - Build for production
 - `npm run db:push` - Push Prisma schema to database
-- `npm run db:seed` - Seed database with sample products
+- `npm run db:seed` - Seed database with categories
 - `npm run test:e2e` - Run Playwright end-to-end tests
-- `npm run test:e2e:report` - View HTML test report
 
 ## Features
 - Age verification gate (21+)
-- Product catalog with filtering and search
+- Product catalog sourced from Google Sheets with in-memory caching
 - Shopping cart with localStorage persistence
-- Stripe Checkout integration
+- Email-based order submission (admin receives order details via Resend)
 - User accounts with order history
-- Admin dashboard for product management
+- Admin dashboard with product cache refresh
 - Legal pages (Terms, Privacy, Disclaimer, etc.)
 
 ## Admin Access
 - URL: /admin
 - Email: admin@peptidelabs.com
 - Password: admin123
+- Admin products page has "Refresh from Google Sheets" button and link to edit the sheet
 
-## Stripe Test Cards
-- Success: 4242 4242 4242 4242
-- Decline: 4000 0000 0000 0002
+## Google Sheet Structure
+- **Products tab**: slug, name, category, shortDescription, description, research, shippingInfo, faq, featured, active, images
+- **Variants tab**: productSlug, variantName, price (in dollars), sku, stock
 
 ## Research Use Disclaimer
 All products are clearly labeled "For Research Use Only - Not for Human Consumption" as required.
@@ -88,35 +115,13 @@ All products are clearly labeled "For Research Use Only - Not for Human Consumpt
 - Descriptive alt text on all images
 
 ## Performance Optimizations
-- **Optimized Prisma queries**: Product listings use select clauses to fetch only necessary fields (excludes large text blobs like description, research, coa, faq)
-- **React cache()**: Applied to getFeaturedProducts, getCategoriesWithCount, getProductBySlug, getRelatedProducts for request deduplication
-- **Removed unused dependencies**: Pruned 5 unused Radix UI packages (accordion, avatar, checkbox, dropdown-menu, navigation-menu)
-- **Centralized data access**: All product queries go through src/lib/queries.ts for consistent optimization
-- **Static SVG icons**: Created src/components/icons/index.tsx with static SVG components for frequently used icons (FlaskIcon, CartIcon, MenuIcon, CloseIcon, UserIcon, WarningIcon, MailIcon, PhoneIcon) - reduces lucide-react bundle impact
-- **Cart store hydration**: Implemented _hasHydrated flag with onRehydrateStorage callback to prevent SSR/client hydration mismatches
+- **Google Sheets caching**: In-memory TTL cache (5-min) avoids repeated API calls
+- **React cache()**: Applied to product query functions for request deduplication
+- **Static SVG icons**: Custom SVG components reduce lucide-react bundle impact
+- **Cart store hydration**: _hasHydrated flag prevents SSR/client hydration mismatches
 
 ## End-to-End Testing
 Playwright tests are configured for QA testing of the purchasing workflow:
 - **Location**: `e2e/purchasing-workflow.spec.ts`
-- **Run tests**: `npm run test:e2e` (requires dev server running or uses webServer config)
-- **View report**: `npm run test:e2e:report`
-
-Test coverage includes:
-1. Product catalog display and filtering
-2. Product detail page with pricing
-3. Add to cart functionality
-4. Cart page operations
-5. Checkout flow (Proceed to Checkout button)
-6. Order success page
-
-Note: Tests use system Chromium via `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` environment variable.
-
-## Recent Changes (December 2024)
-- Fixed sitemap.xml to only include existing pages (removed /about, /contact, /faq)
-- Corrected /refund-policy to /refund in sitemap
-- Updated Footer navigation to match existing pages
-- Comprehensive SEO and accessibility audit completed
-- Performance optimizations: query optimization, caching, dependency cleanup
-- Added static SVG icons to reduce bundle size
-- Implemented cart store lazy hydration pattern
-- Added Playwright E2E tests for purchasing workflow
+- **Run tests**: `npm run test:e2e`
+- Note: Tests use system Chromium via `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` environment variable.
