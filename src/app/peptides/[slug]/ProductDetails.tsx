@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import ReactMarkdown from "react-markdown"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -218,7 +219,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
             <TabsContent value="description" className="pt-6">
               <Card>
                 <CardContent className="pt-6 prose max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br/>') }} />
+                  <ReactMarkdown>{product.description}</ReactMarkdown>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -227,7 +228,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               <Card>
                 <CardContent className="pt-6 prose max-w-none">
                   {product.research ? (
-                    <div dangerouslySetInnerHTML={{ __html: product.research.replace(/\n/g, '<br/>') }} />
+                    <ReactMarkdown>{product.research}</ReactMarkdown>
                   ) : (
                     <p className="text-muted-foreground">Research information coming soon.</p>
                   )}
@@ -254,7 +255,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               <Card>
                 <CardContent className="pt-6 prose max-w-none">
                   {product.shippingInfo ? (
-                    <div dangerouslySetInnerHTML={{ __html: product.shippingInfo.replace(/\n/g, '<br/>') }} />
+                    <ReactMarkdown>{product.shippingInfo}</ReactMarkdown>
                   ) : (
                     <div>
                       <h3>Shipping Information</h3>
@@ -275,7 +276,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
               <Card>
                 <CardContent className="pt-6 prose max-w-none">
                   {product.faq ? (
-                    <div dangerouslySetInnerHTML={{ __html: product.faq.replace(/\n/g, '<br/>') }} />
+                    <ReactMarkdown>{product.faq}</ReactMarkdown>
                   ) : (
                     <div>
                       <h3>Frequently Asked Questions</h3>
