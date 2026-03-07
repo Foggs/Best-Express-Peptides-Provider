@@ -1,32 +1,34 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Cookies from "js-cookie"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { FlaskIcon, WarningIcon } from "@/components/icons"
 
 export function AgeVerification() {
-  const [showDialog, setShowDialog] = useState(false)
+  const [status, setStatus] = useState<"loading" | "needs-verification" | "verified">("loading")
 
   useEffect(() => {
-    const verified = Cookies.get("age-verified")
-    if (!verified) {
-      setShowDialog(true)
-    }
+    const cookie = Cookies.get("age-verified")
+    setStatus(cookie === "true" ? "verified" : "needs-verification")
   }, [])
 
-  const handleVerify = () => {
-    Cookies.set("age-verified", "true", { expires: 30 })
-    setShowDialog(false)
-  }
+  const handleVerify = useCallback(() => {
+    Cookies.set("age-verified", "true", { expires: 30, path: "/" })
+    setStatus("verified")
+  }, [])
 
-  const handleDecline = () => {
+  const handleDecline = useCallback(() => {
     window.location.href = "https://www.google.com"
+  }, [])
+
+  if (status !== "needs-verification") {
+    return null
   }
 
   return (
-    <Dialog open={showDialog} onOpenChange={() => {}}>
+    <Dialog open={true} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader className="text-center space-y-4">
           <div className="flex justify-center">
