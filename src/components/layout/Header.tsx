@@ -52,11 +52,7 @@ export function Header() {
                   Sign Out
                 </Button>
               </div>
-            ) : (
-              <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => signIn()}>
-                Sign In
-              </Button>
-            )}
+            ) : null}
 
             <Link href="/cart" className="relative" aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}>
               <Button variant="outline" size="icon" aria-label="View cart">
@@ -105,11 +101,7 @@ export function Header() {
                     Sign Out
                   </button>
                 </>
-              ) : (
-                <button onClick={() => signIn()} className="text-sm font-medium text-gray-600 hover:text-primary text-left">
-                  Sign In
-                </button>
-              )}
+              ) : null}
             </nav>
           </div>
         )}
