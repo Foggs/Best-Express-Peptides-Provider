@@ -22,21 +22,6 @@ export function Header() {
               <FlaskIcon size={32} className="text-primary" />
               <span className="text-xl font-bold text-primary">BestExpressPeptides</span>
             </Link>
-            
-            <nav className="hidden md:flex items-center gap-6" aria-label="Main navigation">
-              <Link href="/peptides" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                All Peptides
-              </Link>
-              <Link href="/peptides?category=recovery" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                Recovery
-              </Link>
-              <Link href="/peptides?category=longevity" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                Longevity
-              </Link>
-              <Link href="/peptides?category=weight-loss" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                Weight Loss
-              </Link>
-            </nav>
           </div>
 
           <div className="flex items-center gap-4">
@@ -80,18 +65,6 @@ export function Header() {
         {mobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden py-4 border-t">
             <nav className="flex flex-col gap-4" aria-label="Mobile navigation">
-              <Link href="/peptides" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                All Peptides
-              </Link>
-              <Link href="/peptides?category=recovery" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                Recovery
-              </Link>
-              <Link href="/peptides?category=longevity" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                Longevity
-              </Link>
-              <Link href="/peptides?category=weight-loss" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                Weight Loss
-              </Link>
               {session ? (
                 <>
                   <Link href="/account" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
