@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300" role="contentinfo">
       <div className="container-custom py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <FlaskIcon size={24} className="text-primary" />
@@ -27,35 +27,26 @@ export function Footer() {
             </address>
           </div>
 
-          <nav aria-label="Product categories">
-            <h3 className="font-semibold text-white mb-4">Products</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/peptides" className="hover:text-primary transition-colors">All Peptides</Link></li>
-              <li><Link href="/peptides?category=recovery" className="hover:text-primary transition-colors">Recovery</Link></li>
-              <li><Link href="/peptides?category=longevity" className="hover:text-primary transition-colors">Longevity</Link></li>
-              <li><Link href="/peptides?category=weight-loss" className="hover:text-primary transition-colors">Weight Loss</Link></li>
-              <li><Link href="/peptides?category=cognitive" className="hover:text-primary transition-colors">Cognitive</Link></li>
-            </ul>
-          </nav>
+          <div className="grid grid-cols-2 gap-8">
+            <nav aria-label="Company information">
+              <h3 className="font-semibold text-white mb-4">Information</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/shipping" className="hover:text-primary transition-colors">Shipping Info</Link></li>
+                <li><Link href="/refund" className="hover:text-primary transition-colors">Refund Policy</Link></li>
+                <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
+              </ul>
+            </nav>
 
-          <nav aria-label="Company information">
-            <h3 className="font-semibold text-white mb-4">Information</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/shipping" className="hover:text-primary transition-colors">Shipping Info</Link></li>
-              <li><Link href="/refund" className="hover:text-primary transition-colors">Refund Policy</Link></li>
-              <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
-            </ul>
-          </nav>
-
-          <nav aria-label="Legal information">
-            <h3 className="font-semibold text-white mb-4">Legal</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-              <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
-              <li><Link href="/refund" className="hover:text-primary transition-colors">Refund and Cancellation Policy</Link></li>
-            </ul>
-          </nav>
+            <nav aria-label="Legal information">
+              <h3 className="font-semibold text-white mb-4">Legal</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
+                <li><Link href="/refund" className="hover:text-primary transition-colors">Refund and Cancellation Policy</Link></li>
+              </ul>
+            </nav>
+          </div>
         </div>
 
         <Separator className="my-8 bg-gray-700" />
