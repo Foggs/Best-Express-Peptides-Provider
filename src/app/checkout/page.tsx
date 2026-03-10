@@ -340,7 +340,10 @@ export default function CheckoutPage() {
       }
 
       if (data.success) {
-        window.location.href = "/checkout/success"
+        const successUrl = data.orderNumber
+          ? `/checkout/success?order=${encodeURIComponent(data.orderNumber)}`
+          : "/checkout/success"
+        window.location.href = successUrl
       } else {
         throw new Error("Failed to submit order")
       }

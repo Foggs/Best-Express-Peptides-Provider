@@ -27,6 +27,7 @@ interface OrderEmailData {
   discount: number
   total: number
   couponCode?: string
+  orderNumber?: string
 }
 
 function formatPrice(cents: number): string {
@@ -77,6 +78,7 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
     <div style="background-color: #ffffff; padding: 24px; border-radius: 0 0 8px 8px;">
       <div style="margin-bottom: 24px;">
         <h2 style="font-size: 16px; color: #374151; margin: 0 0 8px;">Order placed: ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' })}</h2>
+        ${data.orderNumber ? `<div style="display: inline-block; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px 16px; margin-top: 8px;"><span style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">Order Number</span><span style="font-size: 20px; font-weight: 700; color: #1e40af; font-family: monospace; letter-spacing: 0.1em;">${data.orderNumber}</span></div>` : ''}
       </div>
 
       <div style="margin-bottom: 24px; padding: 16px; background-color: #f9fafb; border-radius: 6px;">

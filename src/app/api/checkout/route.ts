@@ -3,6 +3,14 @@ import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit"
 import { sendOrderEmail } from "@/lib/orderEmail"
 import { checkStock, decrementStock } from "@/lib/productCache"
 
+const ORDER_NUMBER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+function generateOrderNumber(): string {
+  const rand = (n: number) => Math.floor(Math.random() * n)
+  const group = () => Array.from({ length: 4 }, () => ORDER_NUMBER_CHARS[rand(ORDER_NUMBER_CHARS.length)]).join("")
+  return `BE-${group()}-${group()}`
+}
+
 export async function POST(request: NextRequest) {
   const rateLimitResult = rateLimit(request, 50, 60000)
   if (!rateLimitResult.success) {
@@ -79,6 +87,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const orderNumber = generateOrderNumber()
+
     const emailResult = await sendOrderEmail({
       email,
       items: items.map((item: any) => ({
@@ -93,6 +103,7 @@ export async function POST(request: NextRequest) {
       discount,
       total,
       couponCode: coupon?.code,
+      orderNumber,
     })
 
     if (!emailResult.success) {
@@ -109,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, message: "Order submitted successfully" },
+      { success: true, message: "Order submitted successfully", orderNumber },
       { headers: getRateLimitHeaders(rateLimitResult.remaining, 50) }
     )
   } catch (error) {
