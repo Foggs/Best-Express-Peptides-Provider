@@ -67,6 +67,7 @@ Required environment variables:
 - `GOOGLE_SHEET_ID` - Google Sheet ID for product data
 - `RESEND_API_KEY` - Resend API key for sending order emails
 - `ADMIN_EMAIL` - Email address to receive order notifications
+- `GEMINI_API_KEY` - Google Gemini API key for AI content generation (free tier from aistudio.google.com)
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID (optional)
 - `GOOGLE_CLIENT_SECRET` - Google OAuth secret (optional)
 
@@ -86,6 +87,7 @@ Required environment variables:
 - **Inventory management**: Stock validation at checkout, Google Sheets write-back on order, UI quantity caps, low-stock admin email alerts
 - User accounts with order history
 - Admin dashboard with product cache refresh
+- **AI content generation**: Gemini-powered product description, short description, and research summary generation via `/api/admin/generate-product-content` with model fallback (gemini-2.0-flash → gemini-1.5-flash → gemini-2.0-flash-lite) and compliance-safe prompting
 - Legal pages (Terms, Privacy, Disclaimer, etc.)
 
 ## Inventory Management
