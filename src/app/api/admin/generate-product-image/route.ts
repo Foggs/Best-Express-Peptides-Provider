@@ -6,70 +6,6 @@ import * as path from "path"
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
 
-const VIAL_PROMPT_TEMPLATE = `Photorealistic research peptide vial photograph. Clean studio lighting with soft shadows. Centered composition on a pure white background. Clear glass vial with subtle light reflections. Minimal white label with the text "{PEPTIDE_NAME}" printed in clean sans-serif font. Matte silver aluminum crimp cap. Professional laboratory product photography style. Square 1:1 aspect ratio. Sharp focus, high detail. No syringes, no medical symbols, no people, no hands, no needles.`
-
-function buildImagePrompt(peptideName: string): string {
-  return VIAL_PROMPT_TEMPLATE.replace("{PEPTIDE_NAME}", peptideName)
-}
-
-async function generateImageWithImagen(prompt: string, apiKey: string): Promise<Buffer> {
-  const models = [
-    "imagen-4.0-fast-generate-001",
-    "imagen-4.0-generate-001",
-  ]
-
-  let lastError: Error | null = null
-
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instances: [{ prompt }],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: "1:1",
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        lastError = new Error(`${model} API error (${response.status}): ${errorText}`)
-        console.warn(`Image generation with ${model} failed:`, lastError.message)
-        continue
-      }
-
-      const data = await response.json()
-
-      const predictions = data.predictions
-      if (!predictions || predictions.length === 0) {
-        lastError = new Error(`${model} returned no predictions`)
-        console.warn(lastError.message)
-        continue
-      }
-
-      const base64Image = predictions[0].bytesBase64Encoded
-      if (!base64Image) {
-        lastError = new Error(`${model} prediction missing image data`)
-        console.warn(lastError.message)
-        continue
-      }
-
-      return Buffer.from(base64Image, "base64")
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err))
-      console.warn(`Image generation with ${model} threw:`, lastError.message)
-      continue
-    }
-  }
-
-  throw lastError || new Error("All Imagen models failed")
-}
-
 async function generatePlaceholderImage(peptideName: string): Promise<Buffer> {
   const sharp = (await import("sharp")).default
 
@@ -179,7 +115,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { slug, productName } = body
+    const { slug } = body
 
     if (!slug) {
       return NextResponse.json(
@@ -188,7 +124,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const safeSlugRegex = /^[a-z0-9][a-z0-9 -]*$/
+    const safeSlugRegex = /^[a-z0-9][a-z0-9 /\-]*$/
     if (!safeSlugRegex.test(slug.trim())) {
       return NextResponse.json(
         { success: false, error: "Invalid slug format" },
@@ -233,8 +169,8 @@ export async function POST(request: NextRequest) {
     })
 
     let targetRowIndex = -1
-    let resolvedName = productName || ""
     const resolvedSlug = slug.trim()
+    let resolvedName = ""
 
     const slugCol = colIndex["slug"]
     if (slugCol === undefined) {
@@ -246,7 +182,7 @@ export async function POST(request: NextRequest) {
     for (let i = 1; i < rows.length; i++) {
       if ((rows[i][slugCol] || "").trim() === resolvedSlug) {
         targetRowIndex = i
-        resolvedName = rows[i][colIndex["name"]] || productName || resolvedSlug
+        resolvedName = rows[i][colIndex["name"]] || resolvedSlug
         break
       }
     }
@@ -257,32 +193,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const prompt = buildImagePrompt(resolvedName)
-    const apiKey = process.env.GEMINI_API_KEY
-
-    let imageBuffer: Buffer
-    let generatedWith = "placeholder"
-
-    if (apiKey) {
-      try {
-        imageBuffer = await generateImageWithImagen(prompt, apiKey)
-        generatedWith = "imagen"
-      } catch (imagenError) {
-        console.warn("Imagen failed, falling back to placeholder:", imagenError)
-        imageBuffer = await generatePlaceholderImage(resolvedName)
-      }
-    } else {
-      imageBuffer = await generatePlaceholderImage(resolvedName)
-    }
-
+    const safeFilename = resolvedSlug.replace(/[/\\]/g, "_")
+    const filename = `${safeFilename}.png`
     const imageDir = path.join(process.cwd(), "public", "product-images")
+
     if (!fs.existsSync(imageDir)) {
       fs.mkdirSync(imageDir, { recursive: true })
     }
 
-    const filename = `${resolvedSlug}.png`
     const filePath = path.join(imageDir, filename)
-    fs.writeFileSync(filePath, imageBuffer)
+    let generatedWith = "existing"
+
+    if (!fs.existsSync(filePath)) {
+      const imageBuffer = await generatePlaceholderImage(resolvedName)
+      fs.writeFileSync(filePath, imageBuffer)
+      generatedWith = "placeholder"
+    }
 
     const imageUrl = `/product-images/${filename}`
 

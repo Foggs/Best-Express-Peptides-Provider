@@ -88,7 +88,7 @@ Required environment variables:
 - User accounts with order history
 - Admin dashboard with product cache refresh
 - **AI content generation**: Gemini-powered product description, short description, and research summary generation via `/api/admin/generate-product-content` with model fallback (gemini-2.0-flash → gemini-1.5-flash → gemini-2.0-flash-lite) and compliance-safe prompting
-- **AI image generation**: Product thumbnail generation via `/api/admin/generate-product-image` — uses Google Imagen 4.0 API (paid plan) with SVG-based branded placeholder fallback. Saves PNG to `public/product-images/{slug}.png` and writes URL to sheet's `images` column
+- **AI image generation**: Product thumbnail generation via `/api/admin/generate-product-image` — uses Replit's built-in AI image generation (no external API key needed) with SVG-based branded placeholder fallback for new products. Saves PNG to `public/product-images/{slug}.png` and writes URL to sheet's `images` column. All 24 products pre-generated with AI images.
 - Legal pages (Terms, Privacy, Disclaimer, etc.)
 
 ## Inventory Management
