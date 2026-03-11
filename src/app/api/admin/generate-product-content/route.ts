@@ -257,6 +257,7 @@ export async function POST(request: NextRequest) {
       productName: resolvedName,
       generated,
       writtenToSheet,
+      ...((!slug && !writtenToSheet) ? { note: "No slug provided — content generated but not written to sheet. Pass a slug to write back." } : {}),
     })
   } catch (error) {
     console.error("Error generating product content:", error)
