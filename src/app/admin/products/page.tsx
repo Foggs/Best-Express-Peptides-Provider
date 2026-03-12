@@ -34,6 +34,16 @@ interface FormErrors {
   variants?: string
 }
 
+interface VariantFormErrors {
+  selectedProduct?: string
+  variants?: string
+}
+
+interface ProductOption {
+  slug: string
+  name: string
+}
+
 export default function ProductsPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
@@ -54,6 +64,17 @@ export default function ProductsPage() {
   const [generatedContent, setGeneratedContent] = useState<{ shortDescription: string; description: string; research: string } | null>(null)
   const [contentError, setContentError] = useState<string | null>(null)
 
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [selectedProductSlug, setSelectedProductSlug] = useState("")
+  const [existingVariants, setExistingVariants] = useState<Array<{ id: number; variantName: string; price: string; stock: string }>>([
+    { id: 1, variantName: "", price: "", stock: "" },
+  ])
+  const [variantFormErrors, setVariantFormErrors] = useState<VariantFormErrors>({})
+  const [submittingVariants, setSubmittingVariants] = useState(false)
+  const [submittedVariants, setSubmittedVariants] = useState<{ productName: string; productSlug: string; variants: Array<{ variantName: string; price: string; stock: string }> } | null>(null)
+  const [variantSubmitResult, setVariantSubmitResult] = useState<{ success: boolean; message: string } | null>(null)
+
   const addVariant = () => {
     setVariants((prev) => [...prev, { id: Date.now(), variantName: "", price: "", stock: "" }])
   }
@@ -66,6 +87,20 @@ export default function ProductsPage() {
   const updateVariant = (id: number, field: string, value: string) => {
     setVariants((prev) => prev.map((v) => (v.id === id ? { ...v, [field]: value } : v)))
     setFormErrors((prev) => ({ ...prev, variants: undefined }))
+  }
+
+  const addExistingVariant = () => {
+    setExistingVariants((prev) => [...prev, { id: Date.now(), variantName: "", price: "", stock: "" }])
+  }
+
+  const removeExistingVariant = (id: number) => {
+    setExistingVariants((prev) => prev.filter((v) => v.id !== id))
+    setVariantFormErrors((prev) => ({ ...prev, variants: undefined }))
+  }
+
+  const updateExistingVariant = (id: number, field: string, value: string) => {
+    setExistingVariants((prev) => prev.map((v) => (v.id === id ? { ...v, [field]: value } : v)))
+    setVariantFormErrors((prev) => ({ ...prev, variants: undefined }))
   }
 
   const handleProductNameChange = (value: string) => {
@@ -91,8 +126,29 @@ export default function ProductsPage() {
   useEffect(() => {
     if (adminToken) {
       fetchCacheStatus()
+      fetchProductOptions()
     }
   }, [adminToken])
+
+  const fetchProductOptions = async () => {
+    setLoadingProducts(true)
+    try {
+      const response = await fetch("/api/admin/products", {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        const options: ProductOption[] = (data.products || [])
+          .map((p: any) => ({ slug: p.slug, name: p.name }))
+          .sort((a: ProductOption, b: ProductOption) => a.name.localeCompare(b.name))
+        setProductOptions(options)
+      }
+    } catch (error) {
+      console.error("Error fetching product options:", error)
+    } finally {
+      setLoadingProducts(false)
+    }
+  }
 
   const fetchCacheStatus = async () => {
     try {
@@ -159,6 +215,104 @@ export default function ProductsPage() {
     const diffHours = Math.floor(diffMins / 60)
     if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`
     return date.toLocaleDateString() + " " + date.toLocaleTimeString()
+  }
+
+  const handleVariantSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmittingVariants(true)
+    setSubmittedVariants(null)
+    setVariantFormErrors({})
+    setVariantSubmitResult(null)
+
+    const errors: VariantFormErrors = {}
+
+    if (!selectedProductSlug) {
+      errors.selectedProduct = "Please select a product."
+    }
+
+    const filledVars = existingVariants.filter(
+      (v) => v.variantName.trim() !== "" && v.price.trim() !== "" && v.stock.trim() !== ""
+    )
+    const partialVars = existingVariants.filter((v) => {
+      const filled = [v.variantName.trim() !== "", v.price.trim() !== "", v.stock.trim() !== ""]
+      const filledCount = filled.filter(Boolean).length
+      return filledCount > 0 && filledCount < 3
+    })
+
+    if (filledVars.length === 0) {
+      errors.variants = "At least one variant must have all fields filled out (Variant Name, Price, and Stock)."
+    } else if (partialVars.length > 0) {
+      errors.variants = "One or more variant rows are partially filled. Complete or remove them before submitting."
+    }
+
+    if (!errors.variants) {
+      const nonEmptyNames = existingVariants
+        .filter((v) => v.variantName.trim() !== "")
+        .map((v) => v.variantName.trim().toLowerCase())
+      const seen = new Set<string>()
+      for (const name of nonEmptyNames) {
+        if (seen.has(name)) {
+          errors.variants = "Variant names must be unique."
+          break
+        }
+        seen.add(name)
+      }
+    }
+
+    if (!errors.variants) {
+      for (const v of filledVars) {
+        const price = parseFloat(v.price)
+        const stock = parseInt(v.stock, 10)
+        if (isNaN(price) || price <= 0) {
+          errors.variants = "Variant price must be greater than $0."
+          break
+        }
+        if (isNaN(stock) || stock < 0) {
+          errors.variants = "Variant stock cannot be negative."
+          break
+        }
+      }
+    }
+
+    setVariantFormErrors(errors)
+
+    if (Object.keys(errors).length === 0) {
+      const selectedProduct = productOptions.find((p) => p.slug === selectedProductSlug)
+      const variantData = filledVars.map(({ variantName, price, stock }) => ({ variantName, price, stock }))
+
+      try {
+        const res = await fetch("/api/admin/add-variants", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+          body: JSON.stringify({
+            productSlug: selectedProductSlug,
+            variants: variantData,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (res.ok && data.success) {
+          setSubmittedVariants({
+            productName: selectedProduct?.name || selectedProductSlug,
+            productSlug: selectedProductSlug,
+            variants: variantData,
+          })
+          setVariantSubmitResult({ success: true, message: `${data.addedCount} variant(s) added to Google Sheet.` })
+          setExistingVariants([{ id: Date.now(), variantName: "", price: "", stock: "" }])
+          setSelectedProductSlug("")
+        } else {
+          setVariantSubmitResult({ success: false, message: data.error || "Failed to add variants." })
+        }
+      } catch {
+        setVariantSubmitResult({ success: false, message: "Network error. Please try again." })
+      }
+    }
+
+    setSubmittingVariants(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -492,6 +646,171 @@ export default function ProductsPage() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PlusCircle className="h-5 w-5" />
+              Add Variant to Existing Product
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleVariantSubmit} className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="variant-product-select">Select Product</Label>
+                  <select
+                    id="variant-product-select"
+                    value={selectedProductSlug}
+                    onChange={(e) => {
+                      setSelectedProductSlug(e.target.value)
+                      setVariantFormErrors((prev) => ({ ...prev, selectedProduct: undefined }))
+                      setSubmittedVariants(null)
+                      setVariantSubmitResult(null)
+                    }}
+                    className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      variantFormErrors.selectedProduct ? "border-red-500 focus-visible:ring-red-500" : "border-input"
+                    }`}
+                    disabled={loadingProducts}
+                  >
+                    <option value="">{loadingProducts ? "Loading products..." : "-- Select a product --"}</option>
+                    {productOptions.map((p) => (
+                      <option key={p.slug} value={p.slug}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  {variantFormErrors.selectedProduct && (
+                    <div className="flex items-center gap-1.5 text-sm text-red-600 mt-1">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{variantFormErrors.selectedProduct}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="pt-6">
+                  <Button type="submit" disabled={submittingVariants}>
+                    {submittingVariants ? "Submitting..." : "Submit"}
+                  </Button>
+                </div>
+              </div>
+
+              {existingVariants.length > 0 && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 text-xs font-medium text-muted-foreground px-1">
+                    <span>Variant Name</span>
+                    <span>Price ($)</span>
+                    <span>Stock</span>
+                    <span />
+                  </div>
+                  {existingVariants.map((variant) => (
+                    <div key={variant.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-center">
+                      <Input
+                        placeholder="e.g. 10mg"
+                        value={variant.variantName}
+                        onChange={(e) => updateExistingVariant(variant.id, "variantName", e.target.value)}
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={variant.price}
+                        onChange={(e) => updateExistingVariant(variant.id, "price", e.target.value)}
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={variant.stock}
+                        onChange={(e) => updateExistingVariant(variant.id, "stock", e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeExistingVariant(variant.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {variantFormErrors.variants && (
+                <div className="flex items-center gap-1.5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{variantFormErrors.variants}</span>
+                </div>
+              )}
+
+              <Button type="button" variant="outline" size="sm" onClick={addExistingVariant}>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                + Add Variant
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {variantSubmitResult && (
+          <div
+            className={`mb-6 rounded-lg p-3 flex items-start gap-2 ${
+              variantSubmitResult.success
+                ? "bg-green-50 border border-green-200"
+                : "bg-red-50 border border-red-200"
+            }`}
+          >
+            {variantSubmitResult.success ? (
+              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+            )}
+            <p className={`text-sm ${variantSubmitResult.success ? "text-green-800" : "text-red-800"}`}>
+              {variantSubmitResult.message}
+            </p>
+          </div>
+        )}
+
+        {submittedVariants && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <CheckCircle className="h-5 w-5" />
+                Variant Submission Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Product</p>
+                <p className="font-semibold text-green-900">{submittedVariants.productName}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Added Variants</p>
+                <div className="rounded-lg border border-green-200 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-green-100">
+                      <tr>
+                        <th className="text-left px-4 py-2 text-green-800 font-medium">Variant Name</th>
+                        <th className="text-left px-4 py-2 text-green-800 font-medium">Price</th>
+                        <th className="text-left px-4 py-2 text-green-800 font-medium">Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submittedVariants.variants.map((v, i) => (
+                        <tr key={i} className="border-t border-green-200">
+                          <td className="px-4 py-2 text-green-900">{v.variantName}</td>
+                          <td className="px-4 py-2 text-green-900">${v.price}</td>
+                          <td className="px-4 py-2 text-green-900">{v.stock}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
