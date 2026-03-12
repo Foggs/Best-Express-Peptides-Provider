@@ -50,14 +50,17 @@ export async function POST(request: NextRequest) {
     }
 
     for (const v of variants) {
-      if (!v.variantName || !v.price || v.stock === undefined || v.stock === "") {
+      const trimmedName = typeof v.variantName === "string" ? v.variantName.trim() : ""
+      const trimmedPrice = typeof v.price === "string" ? v.price.trim() : String(v.price ?? "")
+      const trimmedStock = typeof v.stock === "string" ? v.stock.trim() : String(v.stock ?? "")
+      if (!trimmedName || !trimmedPrice || !trimmedStock) {
         return NextResponse.json(
           { success: false, error: "Each variant must have variantName, price, and stock" },
           { status: 400 }
         )
       }
-      const price = parseFloat(v.price)
-      const stock = parseInt(v.stock, 10)
+      const price = parseFloat(trimmedPrice)
+      const stock = parseInt(trimmedStock, 10)
       if (isNaN(price) || price <= 0) {
         return NextResponse.json(
           { success: false, error: "Variant price must be greater than $0" },
