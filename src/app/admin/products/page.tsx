@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2 } from "lucide-react"
+import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2, Loader2 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 interface AdminUser {
   id: string
@@ -49,6 +50,9 @@ export default function ProductsPage() {
   ])
   const [submittedProduct, setSubmittedProduct] = useState<{ name: string; variants: Array<{ variantName: string; price: string; stock: string }> } | null>(null)
   const [formErrors, setFormErrors] = useState<FormErrors>({})
+  const [generatingContent, setGeneratingContent] = useState(false)
+  const [generatedContent, setGeneratedContent] = useState<{ shortDescription: string; description: string; research: string } | null>(null)
+  const [contentError, setContentError] = useState<string | null>(null)
 
   const addVariant = () => {
     setVariants((prev) => [...prev, { id: Date.now(), variantName: "", price: "", stock: "" }])
@@ -68,6 +72,8 @@ export default function ProductsPage() {
     setNewProductName(value)
     setFormErrors((prev) => ({ ...prev, productName: undefined }))
     setSubmittedProduct(null)
+    setGeneratedContent(null)
+    setContentError(null)
   }
 
   useEffect(() => {
@@ -231,10 +237,44 @@ export default function ProductsPage() {
     setFormErrors(errors)
 
     if (Object.keys(errors).length === 0) {
-      setSubmittedProduct({
+      const productData = {
         name: newProductName.trim(),
         variants: variants.map(({ variantName, price, stock }) => ({ variantName, price, stock })),
+      }
+      setSubmittedProduct(productData)
+      setGeneratedContent(null)
+      setContentError(null)
+      setGeneratingContent(true)
+
+      fetch("/api/admin/generate-product-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          productName: productData.name,
+          category: "Research Peptide",
+        }),
       })
+        .then(async (res) => {
+          if (res.ok) {
+            const data = await res.json()
+            if (data.success && data.generated) {
+              setGeneratedContent(data.generated)
+            } else {
+              setContentError(data.error || "Failed to generate content.")
+            }
+          } else {
+            setContentError("Failed to generate content. Please try again.")
+          }
+        })
+        .catch(() => {
+          setContentError("Network error while generating content. Please try again.")
+        })
+        .finally(() => {
+          setGeneratingContent(false)
+        })
     }
 
     setAddingProduct(false)
@@ -383,7 +423,13 @@ export default function ProductsPage() {
         </Card>
 
         {submittedProduct && (
-          <Card className="mb-6 border-green-200 bg-green-50">
+          <Card className="mb-6 border-green-200 bg-green-50 relative overflow-hidden">
+            {generatingContent && (
+              <div className="absolute inset-0 bg-green-50/80 z-10 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-green-700" />
+                <p className="text-sm font-medium text-green-800">Generating product content...</p>
+              </div>
+            )}
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-800">
                 <CheckCircle className="h-5 w-5" />
@@ -418,6 +464,34 @@ export default function ProductsPage() {
                   </table>
                 </div>
               </div>
+
+              {contentError && (
+                <div className="flex items-center gap-1.5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{contentError}</span>
+                </div>
+              )}
+
+              {generatedContent && (
+                <>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Short Description</p>
+                    <p className="text-sm text-green-900">{generatedContent.shortDescription}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Description</p>
+                    <div className="prose prose-sm prose-green max-w-none text-green-900 bg-white/50 rounded-lg border border-green-200 p-4">
+                      <ReactMarkdown>{generatedContent.description}</ReactMarkdown>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Research</p>
+                    <div className="prose prose-sm prose-green max-w-none text-green-900 bg-white/50 rounded-lg border border-green-200 p-4">
+                      <ReactMarkdown>{generatedContent.research}</ReactMarkdown>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
