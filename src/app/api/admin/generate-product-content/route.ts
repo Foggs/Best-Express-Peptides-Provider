@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { getUncachableGoogleSheetClient } from "@/lib/googleSheets"
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai"
+import OpenAI from "openai"
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
 
-const CONTENT_SCHEMA = {
-  type: SchemaType.OBJECT,
-  properties: {
-    shortDescription: {
-      type: SchemaType.STRING,
-      description: "A concise 1-2 sentence product summary for catalog listings. Research-focused, neutral tone.",
-    },
-    description: {
-      type: SchemaType.STRING,
-      description: "A detailed product description (3-5 paragraphs) covering what the peptide is, its molecular properties, and areas of research interest. Use markdown formatting.",
-    },
-    research: {
-      type: SchemaType.STRING,
-      description: "A comprehensive research summary (4-8 paragraphs) covering published studies, mechanisms of action, and current research directions. Use markdown formatting with section headers.",
-    },
-  },
-  required: ["shortDescription", "description", "research"],
-}
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+})
 
 function buildPrompt(productName: string, category: string): string {
   return `You are a scientific content writer for a research peptide supplier. Generate product content for the following peptide:
@@ -41,12 +27,14 @@ STRICT COMPLIANCE RULES — YOU MUST FOLLOW ALL OF THESE:
 - Reference published research studies where applicable
 - Use phrases like "studies suggest", "research indicates", "has been investigated for"
 
-Generate three fields:
+Generate a JSON object with exactly three fields:
 1. shortDescription: A concise 1-2 sentence summary suitable for product cards
 2. description: A detailed product description with markdown formatting
 3. research: A comprehensive research summary with markdown section headers
 
-All content must be factual, citation-aware, and written for a research audience.`
+All content must be factual, citation-aware, and written for a research audience.
+
+Respond with ONLY valid JSON, no other text.`
 }
 
 export async function POST(request: NextRequest) {
@@ -142,44 +130,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: "GEMINI_API_KEY is not configured" },
-        { status: 500 }
-      )
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite"]
     const prompt = buildPrompt(resolvedName, resolvedCategory)
 
-    let responseText = ""
-    let lastError: Error | null = null
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 8192,
+    })
 
-    for (const modelName of models) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: CONTENT_SCHEMA,
-          },
-        })
-        const result = await model.generateContent(prompt)
-        responseText = result.response.text()
-        lastError = null
-        break
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err))
-        console.warn(`Model ${modelName} failed, trying next...`, lastError.message)
-        continue
-      }
-    }
-
-    if (lastError || !responseText) {
-      throw lastError || new Error("All models failed")
-    }
+    const responseText = completion.choices[0]?.message?.content || ""
 
     let generated: {
       shortDescription: string

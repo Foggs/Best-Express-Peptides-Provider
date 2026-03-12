@@ -67,7 +67,8 @@ Required environment variables:
 - `GOOGLE_SHEET_ID` - Google Sheet ID for product data
 - `RESEND_API_KEY` - Resend API key for sending order emails
 - `ADMIN_EMAIL` - Email address to receive order notifications
-- `GEMINI_API_KEY` - Google Gemini API key for AI content generation (free tier from aistudio.google.com)
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` - Replit AI Integration base URL (auto-configured)
+- `AI_INTEGRATIONS_OPENAI_API_KEY` - Replit AI Integration API key (auto-configured)
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID (optional)
 - `GOOGLE_CLIENT_SECRET` - Google OAuth secret (optional)
 
@@ -87,7 +88,7 @@ Required environment variables:
 - **Inventory management**: Stock validation at checkout, Google Sheets write-back on order, UI quantity caps, low-stock admin email alerts
 - User accounts with order history
 - Admin dashboard with product cache refresh
-- **AI content generation**: Gemini-powered product description, short description, and research summary generation via `/api/admin/generate-product-content` with model fallback (gemini-2.0-flash → gemini-1.5-flash → gemini-2.0-flash-lite) and compliance-safe prompting
+- **AI content generation**: Product description, short description, and research summary generation via `/api/admin/generate-product-content` using Replit AI Integration (OpenAI-compatible, gpt-4o-mini, no API key required — billed to Replit credits) with compliance-safe prompting
 - **AI image generation**: Product thumbnail generation via `/api/admin/generate-product-image` — uses Replit's built-in AI image generation (no external API key needed) with SVG-based branded placeholder fallback for new products. Saves PNG to `public/product-images/{slug}.png` and writes URL to sheet's `images` column. All 24 products pre-generated with AI images.
 - **Slug standardization**: All product slugs normalized to lowercase-hyphenated format (e.g. "dsip 15" → "dsip-15", "2x alpha cjc/ipa" → "2x-alpha-cjc-ipa"). Normalization happens at cache load time via `slugify()` — no sheet edits needed. Image filenames and URLs match the normalized slugs.
 - Legal pages (Terms, Privacy, Disclaimer, etc.)
