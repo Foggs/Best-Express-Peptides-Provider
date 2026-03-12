@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2, Loader2 } from "lucide-react"
+import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2, Loader2, Save } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
 interface AdminUser {
@@ -63,6 +63,8 @@ export default function ProductsPage() {
   const [generatingContent, setGeneratingContent] = useState(false)
   const [generatedContent, setGeneratedContent] = useState<{ shortDescription: string; description: string; research: string } | null>(null)
   const [contentError, setContentError] = useState<string | null>(null)
+  const [savingProduct, setSavingProduct] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ success: boolean; message: string; slug?: string } | null>(null)
 
   const [productOptions, setProductOptions] = useState<ProductOption[]>([])
   const [loadingProducts, setLoadingProducts] = useState(false)
@@ -320,6 +322,7 @@ export default function ProductsPage() {
     setAddingProduct(true)
     setSubmittedProduct(null)
     setFormErrors({})
+    setSaveResult(null)
 
     const errors: FormErrors = {}
 
@@ -432,6 +435,61 @@ export default function ProductsPage() {
     }
 
     setAddingProduct(false)
+  }
+
+  const handleSaveToSheet = async () => {
+    if (!submittedProduct || !generatedContent) return
+    setSavingProduct(true)
+    setSaveResult(null)
+
+    try {
+      const res = await fetch("/api/admin/add-product", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          name: submittedProduct.name,
+          category: "Research Peptide",
+          shortDescription: generatedContent.shortDescription,
+          description: generatedContent.description,
+          research: generatedContent.research,
+          variants: submittedProduct.variants.filter(
+            (v) => v.variantName.trim() && v.price.trim() && v.stock.trim()
+          ),
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setSaveResult({
+          success: true,
+          message: `Product "${data.name}" saved with ${data.variantCount} variant(s).`,
+          slug: data.slug,
+        })
+        setNewProductName("")
+        setVariants([{ id: Date.now(), variantName: "", price: "", stock: "" }])
+        setSubmittedProduct(null)
+        setGeneratedContent(null)
+        setContentError(null)
+        setFormErrors({})
+        fetchProductOptions()
+      } else {
+        setSaveResult({
+          success: false,
+          message: data.error || "Failed to save product.",
+        })
+      }
+    } catch {
+      setSaveResult({
+        success: false,
+        message: "Network error while saving. Please try again.",
+      })
+    } finally {
+      setSavingProduct(false)
+    }
   }
 
   if (!mounted) {
@@ -644,10 +702,59 @@ export default function ProductsPage() {
                       <ReactMarkdown>{generatedContent.research}</ReactMarkdown>
                     </div>
                   </div>
+
+                  <div className="pt-4 border-t border-green-200">
+                    <Button
+                      onClick={handleSaveToSheet}
+                      disabled={savingProduct}
+                      className="w-full bg-green-700 hover:bg-green-800 text-white"
+                      size="lg"
+                    >
+                      {savingProduct ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Saving to Google Sheet...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-5 w-5 mr-2" />
+                          Save to Google Sheet
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </>
               )}
             </CardContent>
           </Card>
+        )}
+
+        {saveResult && (
+          <div className={`mb-6 flex items-start gap-2 text-sm rounded-lg px-4 py-3 border ${
+            saveResult.success
+              ? "bg-green-50 text-green-800 border-green-200"
+              : "bg-red-50 text-red-700 border-red-200"
+          }`}>
+            {saveResult.success ? (
+              <CheckCircle className="h-5 w-5 shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="font-medium">{saveResult.message}</p>
+              {saveResult.success && saveResult.slug && (
+                <a
+                  href={`/peptides/${saveResult.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-1 text-green-700 underline hover:text-green-900"
+                >
+                  View product page
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          </div>
         )}
 
         <Card className="mb-6">
