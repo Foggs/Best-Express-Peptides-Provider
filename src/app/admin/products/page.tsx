@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2, Loader2, Save } from "lucide-react"
+import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2, Loader2, Save, ChevronDown } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
 interface AdminUser {
@@ -76,6 +76,21 @@ export default function ProductsPage() {
   const [submittingVariants, setSubmittingVariants] = useState(false)
   const [submittedVariants, setSubmittedVariants] = useState<{ productName: string; productSlug: string; variants: Array<{ variantName: string; price: string; stock: string }> } | null>(null)
   const [variantSubmitResult, setVariantSubmitResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [showVariantSection, setShowVariantSection] = useState(false)
+
+  const toggleVariantSection = () => {
+    const next = !showVariantSection
+    setShowVariantSection(next)
+    if (next) {
+      fetchProductOptions()
+    } else {
+      setSelectedProductSlug("")
+      setExistingVariants([{ id: Date.now(), variantName: "", price: "", stock: "" }])
+      setVariantFormErrors({})
+      setSubmittedVariants(null)
+      setVariantSubmitResult(null)
+    }
+  }
 
   const addVariant = () => {
     setVariants((prev) => [...prev, { id: Date.now(), variantName: "", price: "", stock: "" }])
@@ -128,7 +143,6 @@ export default function ProductsPage() {
   useEffect(() => {
     if (adminToken) {
       fetchCacheStatus()
-      fetchProductOptions()
     }
   }, [adminToken])
 
@@ -475,11 +489,6 @@ export default function ProductsPage() {
         setGeneratedContent(null)
         setContentError(null)
         setFormErrors({})
-        setProductOptions((prev) => {
-          const updated = [...prev, { slug: data.slug, name: data.name }]
-          updated.sort((a, b) => a.name.localeCompare(b.name))
-          return updated
-        })
       } else {
         setSaveResult({
           success: false,
@@ -762,13 +771,17 @@ export default function ProductsPage() {
         )}
 
         <Card className="mb-6">
-          <CardHeader>
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={toggleVariantSection}
+          >
             <CardTitle className="flex items-center gap-2">
               <PlusCircle className="h-5 w-5" />
               Add Variant to Existing Product
+              <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${showVariantSection ? "rotate-180" : ""}`} />
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          {showVariantSection && <CardContent>
             <form onSubmit={handleVariantSubmit} className="space-y-4">
               <div className="flex items-start gap-4">
                 <div className="flex-1 space-y-1">
@@ -864,7 +877,7 @@ export default function ProductsPage() {
                 + Add Variant
               </Button>
             </form>
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {variantSubmitResult && (
