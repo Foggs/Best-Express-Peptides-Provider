@@ -39,7 +39,10 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [newProductName, setNewProductName] = useState("")
   const [addingProduct, setAddingProduct] = useState(false)
-  const [variants, setVariants] = useState<Array<{ id: number; variantName: string; price: string; stock: string }>>([])
+  const [variants, setVariants] = useState<Array<{ id: number; variantName: string; price: string; stock: string }>>([
+    { id: 1, variantName: "", price: "", stock: "" },
+  ])
+  const [submittedProduct, setSubmittedProduct] = useState<{ name: string; variants: Array<{ variantName: string; price: string; stock: string }> } | null>(null)
 
   const addVariant = () => {
     setVariants((prev) => [...prev, { id: Date.now(), variantName: "", price: "", stock: "" }])
@@ -200,6 +203,10 @@ export default function ProductsPage() {
               onSubmit={(e) => {
                 e.preventDefault()
                 setAddingProduct(true)
+                setSubmittedProduct({
+                  name: newProductName.trim(),
+                  variants: variants.map(({ variantName, price, stock }) => ({ variantName, price, stock })),
+                })
                 setTimeout(() => setAddingProduct(false), 500)
               }}
               className="space-y-4"
@@ -214,7 +221,7 @@ export default function ProductsPage() {
                     onChange={(e) => setNewProductName(e.target.value)}
                   />
                 </div>
-                <Button type="submit" disabled={addingProduct || !newProductName.trim()}>
+                <Button type="submit" disabled={addingProduct || !newProductName.trim() || variants.length === 0}>
                   {addingProduct ? "Submitting..." : "Submit"}
                 </Button>
               </div>
@@ -270,6 +277,46 @@ export default function ProductsPage() {
             </form>
           </CardContent>
         </Card>
+
+        {submittedProduct && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <CheckCircle className="h-5 w-5" />
+                Product Submission Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Product Name</p>
+                <p className="font-semibold text-green-900">{submittedProduct.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Variants</p>
+                <div className="rounded-lg border border-green-200 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-green-100">
+                      <tr>
+                        <th className="text-left px-4 py-2 text-green-800 font-medium">Variant Name</th>
+                        <th className="text-left px-4 py-2 text-green-800 font-medium">Price</th>
+                        <th className="text-left px-4 py-2 text-green-800 font-medium">Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submittedProduct.variants.map((v, i) => (
+                        <tr key={i} className="border-t border-green-200">
+                          <td className="px-4 py-2 text-green-900">{v.variantName || <span className="text-muted-foreground italic">—</span>}</td>
+                          <td className="px-4 py-2 text-green-900">{v.price ? `$${v.price}` : <span className="text-muted-foreground italic">—</span>}</td>
+                          <td className="px-4 py-2 text-green-900">{v.stock || <span className="text-muted-foreground italic">—</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
