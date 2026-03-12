@@ -163,11 +163,48 @@ export default function ProductsPage() {
 
     const errors: FormErrors = {}
 
-    const hasFilledVariant = variants.some(
+    const filledVariants = variants.filter(
       (v) => v.variantName.trim() !== "" && v.price.trim() !== "" && v.stock.trim() !== ""
     )
-    if (!hasFilledVariant) {
+    const partialVariants = variants.filter((v) => {
+      const filled = [v.variantName.trim() !== "", v.price.trim() !== "", v.stock.trim() !== ""]
+      const filledCount = filled.filter(Boolean).length
+      return filledCount > 0 && filledCount < 3
+    })
+
+    if (filledVariants.length === 0) {
       errors.variants = "At least one variant must have all fields filled out (Variant Name, Price, and Stock)."
+    } else if (partialVariants.length > 0) {
+      errors.variants = "One or more variant rows are partially filled. Complete or remove them before submitting."
+    }
+
+    if (!errors.variants) {
+      const nonEmptyNames = variants
+        .filter((v) => v.variantName.trim() !== "")
+        .map((v) => v.variantName.trim().toLowerCase())
+      const seen = new Set<string>()
+      for (const name of nonEmptyNames) {
+        if (seen.has(name)) {
+          errors.variants = "Variant names must be unique."
+          break
+        }
+        seen.add(name)
+      }
+    }
+
+    if (!errors.variants) {
+      for (const v of filledVariants) {
+        const price = parseFloat(v.price)
+        const stock = parseInt(v.stock, 10)
+        if (isNaN(price) || price <= 0) {
+          errors.variants = "Variant price must be greater than $0."
+          break
+        }
+        if (isNaN(stock) || stock < 0) {
+          errors.variants = "Variant stock cannot be negative."
+          break
+        }
+      }
     }
 
     if (newProductName.trim()) {
@@ -181,11 +218,13 @@ export default function ProductsPage() {
         if (res.ok) {
           const data = await res.json()
           if (data.exists) {
-            errors.productName = "A product with this name already exists in the Google Sheet."
+            errors.productName = `A product named '${newProductName.trim()}' already exists in the Google Sheet.`
           }
+        } else {
+          errors.productName = "Network failure, try again."
         }
       } catch {
-        // If the check fails, allow submission to proceed
+        errors.productName = "Network failure, try again."
       }
     }
 
