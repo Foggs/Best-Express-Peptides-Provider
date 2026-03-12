@@ -475,6 +475,11 @@ export default function ProductsPage() {
         setGeneratedContent(null)
         setContentError(null)
         setFormErrors({})
+        setProductOptions((prev) => {
+          const updated = [...prev, { slug: data.slug, name: data.name }]
+          updated.sort((a, b) => a.name.localeCompare(b.name))
+          return updated
+        })
         fetchProductOptions()
       } else {
         setSaveResult({
