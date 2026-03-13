@@ -158,8 +158,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!generated.categories) {
+    if (!generated.categories || !generated.categories.trim()) {
       generated.categories = "Research Peptide"
+    } else {
+      const cats = generated.categories.split(",").map(c => c.trim()).filter(Boolean).slice(0, 3)
+      generated.categories = cats.length > 0 ? cats.join(", ") : "Research Peptide"
     }
 
     if (!generated.shortDescription || !generated.description || !generated.research) {

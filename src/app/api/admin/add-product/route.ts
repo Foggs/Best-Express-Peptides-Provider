@@ -93,7 +93,8 @@ export async function POST(request: NextRequest) {
     }
 
     const productSlug = slugify(name.trim())
-    const resolvedCategory = (categories || "Research Peptide").trim()
+    const rawCategories = (categories || "").trim()
+    const resolvedCategory = rawCategories.length > 0 ? rawCategories : "Research Peptide"
 
     const sheets = await getUncachableGoogleSheetClient()
 
