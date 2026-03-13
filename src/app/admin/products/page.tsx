@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, Trash2, Loader2, Save, ChevronDown } from "lucide-react"
+import { ArrowLeft, LogOut, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Clock, PlusCircle, MinusCircle, Trash2, Loader2, Save } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
 interface AdminUser {
@@ -76,7 +76,22 @@ export default function ProductsPage() {
   const [submittingVariants, setSubmittingVariants] = useState(false)
   const [submittedVariants, setSubmittedVariants] = useState<{ productName: string; productSlug: string; variants: Array<{ variantName: string; price: string; stock: string }> } | null>(null)
   const [variantSubmitResult, setVariantSubmitResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [showNewProductSection, setShowNewProductSection] = useState(false)
   const [showVariantSection, setShowVariantSection] = useState(false)
+
+  const toggleNewProductSection = () => {
+    const next = !showNewProductSection
+    setShowNewProductSection(next)
+    if (!next) {
+      setNewProductName("")
+      setVariants([{ id: Date.now(), variantName: "", price: "", stock: "" }])
+      setSubmittedProduct(null)
+      setGeneratedContent(null)
+      setContentError(null)
+      setFormErrors({})
+      setSaveResult(null)
+    }
+  }
 
   const toggleVariantSection = () => {
     const next = !showVariantSection
@@ -556,13 +571,18 @@ export default function ProductsPage() {
         </div>
 
         <Card className="mb-6">
-          <CardHeader>
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={toggleNewProductSection}
+          >
             <CardTitle className="flex items-center gap-2">
-              <PlusCircle className="h-5 w-5" />
               Add New Product
+              <span className="ml-auto">
+                {showNewProductSection ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          {showNewProductSection && <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-start gap-4">
                 <div className="flex-1 space-y-1">
@@ -644,7 +664,7 @@ export default function ProductsPage() {
                 + Add Variant
               </Button>
             </form>
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {submittedProduct && (
@@ -776,9 +796,10 @@ export default function ProductsPage() {
             onClick={toggleVariantSection}
           >
             <CardTitle className="flex items-center gap-2">
-              <PlusCircle className="h-5 w-5" />
               Add Variant to Existing Product
-              <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${showVariantSection ? "rotate-180" : ""}`} />
+              <span className="ml-auto">
+                {showVariantSection ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
+              </span>
             </CardTitle>
           </CardHeader>
           {showVariantSection && <CardContent>
