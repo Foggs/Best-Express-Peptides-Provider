@@ -1,22 +1,49 @@
 modules = ["nodejs-20", "python-3.11", "postgresql-16"]
 [agent]
 expertMode = true
-integrations = ["javascript_log_in_with_replit:1.0.0", "javascript_database:1.0.0", "google-sheet:1.0.0", "javascript_openai_ai_integrations:2.0.0"]
+integrations = [
+  "javascript_log_in_with_replit:1.0.0",
+  "javascript_database:1.0.0",
+  "google-sheet:1.0.0",
+  "javascript_openai_ai_integrations:2.0.0",
+]
 
 [nix]
 channel = "stable-25_05"
-packages = ["alsa-lib", "at-spi2-atk", "at-spi2-core", "atk", "cairo", "chromium", "cups", "dbus", "expat", "glib", "libdrm", "libxkbcommon", "mesa", "nspr", "nss", "pango", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXrandr", "xorg.libxcb"]
+packages = [
+  "alsa-lib",
+  "at-spi2-atk",
+  "at-spi2-core",
+  "atk",
+  "cairo",
+  "chromium",
+  "cups",
+  "dbus",
+  "expat",
+  "glib",
+  "libdrm",
+  "libxkbcommon",
+  "mesa",
+  "nspr",
+  "nss",
+  "pango",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXrandr",
+  "xorg.libxcb",
+]
 
 [userenv]
 
 [userenv.shared]
-NEXTAUTH_SECRET = "peptidelabs-secret-key-change-in-production-123456"
 NEXTAUTH_URL = "https://localhost:5000"
 NEXT_PUBLIC_GA_ID = "G-XXXXXXXXXX"
 GOOGLE_SHEET_ID = "1kUInxIBWDL2XdSS5WeRtrRhYzxHYzWVUiU8vNjY8dHA"
 NEXT_PUBLIC_GOOGLE_SHEET_ID = "1kUInxIBWDL2XdSS5WeRtrRhYzxHYzWVUiU8vNjY8dHA"
 ADMIN_EMAIL = "brian@cellingpeptides.com"
-JWT_SECRET = "587e68ad05dad8b7ddc1879f695ee1c527fe567a3d3ce725337f202a93971e33"
 
 [workflows]
 runButton = "Project"
