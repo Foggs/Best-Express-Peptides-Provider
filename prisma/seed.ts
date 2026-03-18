@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -26,6 +27,34 @@ async function main() {
   }
 
   console.log('Categories seeded. Product data lives in Google Sheets.')
+  console.log('')
+
+  const adminEmail = process.env.ADMIN_EMAIL
+  const adminPassword = process.env.ADMIN_PASSWORD
+
+  if (!adminEmail || !adminPassword) {
+    console.warn('⚠ ADMIN_EMAIL or ADMIN_PASSWORD not set — skipping admin user seed.')
+    console.warn('  Set both environment variables and re-run to create the admin account.')
+    return
+  }
+
+  const hashedPassword = await bcrypt.hash(adminPassword, 12)
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      password: hashedPassword,
+      isAdmin: true,
+    },
+    create: {
+      email: adminEmail,
+      name: 'Admin',
+      password: hashedPassword,
+      isAdmin: true,
+    },
+  })
+
+  console.log(`✓ Admin user seeded: ${adminEmail}`)
 }
 
 main()
