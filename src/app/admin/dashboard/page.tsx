@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LogOut, ShoppingBag, Tag, Package } from "lucide-react"
+import { LogOut, ShoppingBag, Tag, Package, Home } from "lucide-react"
 
 interface AdminUser {
   id: string
@@ -70,6 +70,10 @@ export default function AdminDashboard() {
             <span className="text-sm text-muted-foreground">
               {adminUser?.email}
             </span>
+            <Button variant="outline" size="sm" onClick={() => router.push("/")}>
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Button>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Logout
