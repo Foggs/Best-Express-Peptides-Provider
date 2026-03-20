@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
 import { Button } from "@/components/ui/button"
@@ -10,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { ProductCard } from "@/components/products/ProductCard"
+import { PeptideHero } from "@/components/products/PeptideHero"
 import { useCartStore } from "@/store/cart"
 import { useToast } from "@/hooks/use-toast"
 import { formatPrice } from "@/lib/utils"
@@ -33,7 +33,6 @@ interface ProductDetailsProps {
 export function ProductDetails({ product, relatedProducts }: ProductDetailsProps) {
   const [selectedVariant, setSelectedVariant] = useState(product.variants[0])
   const [quantity, setQuantity] = useState(1)
-  const [selectedImage, setSelectedImage] = useState(0)
   const { addItem } = useCartStore()
   const { toast } = useToast()
 
@@ -67,37 +66,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
 
         <div className="grid lg:grid-cols-2 gap-12">
           <div className="space-y-4">
-            <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-50 rounded-lg overflow-hidden">
-              {product.images[selectedImage] ? (
-                <Image
-                  src={product.images[selectedImage]}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-9xl font-bold text-gray-200">
-                    {product.name.charAt(0)}
-                  </div>
-                </div>
-              )}
-            </div>
-            {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
-                {product.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`relative w-20 h-20 rounded-md overflow-hidden shrink-0 border-2 ${
-                      selectedImage === index ? 'border-primary' : 'border-transparent'
-                    }`}
-                  >
-                    <Image src={image} alt="" fill className="object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+            <PeptideHero name={product.name} />
           </div>
 
           <div className="space-y-6">

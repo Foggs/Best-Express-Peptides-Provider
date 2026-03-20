@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { ProductCard } from "@/components/products/ProductCard"
+import { PeptideHero } from "@/components/products/PeptideHero"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { BreadcrumbJsonLd } from "@/components/seo/JsonLd"
@@ -44,14 +45,11 @@ export default async function PeptidesPage({ searchParams }: PageProps) {
   return (
     <>
       <BreadcrumbJsonLd items={breadcrumbItems} />
+      <div>
+        <PeptideHero name="Research Peptides" />
+      </div>
       <div className="py-8">
       <div className="container-custom">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Research Peptides</h1>
-          <p className="text-muted-foreground">
-            Browse our comprehensive collection of laboratory-grade peptides for research purposes.
-          </p>
-        </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className={`lg:w-64 shrink-0 ${category ? 'order-2 lg:order-1' : ''}`}>
