@@ -66,7 +66,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
 
         <div className="grid lg:grid-cols-2 gap-12">
           <div className="space-y-4">
-            <PeptideHero name={product.name} />
+            <PeptideHero name={product.name} priority />
           </div>
 
           <div className="space-y-6">

@@ -46,7 +46,7 @@ export default async function PeptidesPage({ searchParams }: PageProps) {
     <>
       <BreadcrumbJsonLd items={breadcrumbItems} />
       <div>
-        <PeptideHero name="Research Peptides" />
+        <PeptideHero name="Research Peptides" priority />
       </div>
       <div className="py-8">
       <div className="container-custom">
