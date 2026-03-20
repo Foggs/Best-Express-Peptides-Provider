@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import { getUncachableGoogleSheetClient } from './googleSheets'
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
@@ -584,6 +585,7 @@ export async function decrementStock(items: StockCheckItem[]): Promise<Decrement
   })
 
   clearCache()
+  revalidatePath('/peptides', 'layout')
 
   return { success: true, lowStockWarnings }
 }

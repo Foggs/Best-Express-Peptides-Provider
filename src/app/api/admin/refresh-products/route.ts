@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { clearCache, getCacheStatus, getCachedProducts } from "@/lib/productCache"
 
@@ -10,6 +11,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const { cleared, previousLastFetched } = clearCache()
+    revalidatePath('/peptides', 'layout')
     const products = await getCachedProducts()
     const status = getCacheStatus()
 
