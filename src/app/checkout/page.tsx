@@ -247,7 +247,7 @@ export default function CheckoutPage() {
   }
 
   const subtotal = getTotal()
-  const shipping = subtotal >= 20000 ? 0 : 1500
+  const shipping = 0
   const discount = appliedCoupon ? appliedCoupon.discount : 0
   const total = subtotal + shipping - discount
 
@@ -570,10 +570,6 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-sm">
                   <span>Subtotal ({items.length} items)</span>
                   <span>{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Shipping</span>
-                  <span>{shipping === 0 ? "FREE" : formatPrice(shipping)}</span>
                 </div>
 
                 {!appliedCoupon ? (

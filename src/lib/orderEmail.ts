@@ -120,10 +120,6 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
             <td style="padding: 4px 0; font-size: 14px; color: #6b7280;">Subtotal</td>
             <td style="padding: 4px 0; font-size: 14px; color: #111827; text-align: right;">${formatPrice(data.subtotal)}</td>
           </tr>
-          <tr>
-            <td style="padding: 4px 0; font-size: 14px; color: #6b7280;">Shipping</td>
-            <td style="padding: 4px 0; font-size: 14px; color: #111827; text-align: right;">${data.shipping === 0 ? 'FREE' : formatPrice(data.shipping)}</td>
-          </tr>
           ${data.discount > 0 ? `
           <tr>
             <td style="padding: 4px 0; font-size: 14px; color: #16a34a;">Discount${data.couponCode ? ` (${data.couponCode})` : ''}</td>

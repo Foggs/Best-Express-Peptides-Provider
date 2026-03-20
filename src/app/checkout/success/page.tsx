@@ -149,10 +149,6 @@ function SuccessContent() {
                         <span className="text-muted-foreground">Subtotal</span>
                         <span>{formatPrice(orderSummary.subtotal)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Shipping</span>
-                        <span>{orderSummary.shipping === 0 ? "FREE" : formatPrice(orderSummary.shipping)}</span>
-                      </div>
                       {orderSummary.discount > 0 && (
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Discount{orderSummary.couponCode ? ` (${orderSummary.couponCode})` : ""}</span>

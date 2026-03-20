@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     const subtotal = verifiedItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
-    const shipping = subtotal >= 20000 ? 0 : 1500
+    const shipping = 0
     const discount = coupon ? coupon.discount : 0
     const total = subtotal + shipping - discount
 
