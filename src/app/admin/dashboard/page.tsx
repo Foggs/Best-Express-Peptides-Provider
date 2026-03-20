@@ -33,6 +33,7 @@ export default function AdminDashboard() {
     localStorage.removeItem("adminUser")
     setAdminToken(null)
     setAdminUser(null)
+    router.push("/")
   }
 
   if (!mounted) {

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { FlaskIcon, CartIcon, MenuIcon, CloseIcon, UserIcon } from "@/components/icons"
-import { Home } from "lucide-react"
+import { Home, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/cart"
 import { useSession, signIn, signOut } from "next-auth/react"
@@ -46,6 +46,13 @@ export function Header() {
               </Button>
             </Link>
 
+            <Link href="/admin/login" aria-label="Admin">
+              <Button variant="outline" size="sm">
+                <Shield size={16} className="mr-2" />
+                Admin
+              </Button>
+            </Link>
+
             <Link href="/cart" className="relative" aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}>
               <Button variant="outline" size="icon" aria-label="View cart">
                 <CartIcon size={20} />
@@ -72,6 +79,9 @@ export function Header() {
         {mobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden py-4 border-t">
             <nav className="flex flex-col gap-4" aria-label="Mobile navigation">
+              <Link href="/admin/login" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                Admin
+              </Link>
               {session ? (
                 <>
                   <Link href="/account" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
