@@ -5,32 +5,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { FlaskIcon, WarningIcon } from "@/components/icons"
 
-type VerificationState = "checking" | "verified" | "unverified"
-
 export function AgeVerification() {
-  const [state, setState] = useState<VerificationState>("checking")
+  const [verified, setVerified] = useState(true)
 
   useEffect(() => {
     const alreadyVerified = sessionStorage.getItem("age-verified") === "true"
-    setState(alreadyVerified ? "verified" : "unverified")
+    if (!alreadyVerified) {
+      setVerified(false)
+    }
   }, [])
 
   const handleVerify = useCallback(() => {
     sessionStorage.setItem("age-verified", "true")
-    setState("verified")
+    setVerified(true)
   }, [])
 
   const handleDecline = useCallback(() => {
     window.location.href = "https://www.google.com"
   }, [])
 
-  if (state === "checking") {
-    return (
-      <div className="fixed inset-0 z-[100] bg-white" aria-hidden="true" />
-    )
-  }
-
-  if (state === "verified") {
+  if (verified) {
     return null
   }
 
