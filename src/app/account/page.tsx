@@ -12,6 +12,7 @@ import { User, Package, LogOut, Loader2 } from "lucide-react"
 
 interface Order {
   id: string
+  orderNumber: string | null
   status: string
   total: number
   createdAt: string
@@ -123,9 +124,14 @@ export default function AccountPage() {
                     {orders.map((order) => (
                       <div key={order.id} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </span>
+                          <div>
+                            {order.orderNumber && (
+                              <span className="text-sm font-medium mr-2">{order.orderNumber}</span>
+                            )}
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(order.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
                           <Badge className={statusColors[order.status] || ""}>
                             {order.status}
                           </Badge>
