@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AlertCircle, Plus, Trash2, Edit2, LogOut } from "lucide-react"
+import { AlertCircle, Plus, Trash2, Edit2 } from "lucide-react"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { formatPrice } from "@/lib/utils"
 
 interface Coupon {
@@ -100,8 +101,6 @@ export default function AdminDashboard() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken")
-    localStorage.removeItem("adminUser")
     setAdminToken(null)
     setAdminUser(null)
     setCoupons([])
@@ -272,18 +271,11 @@ export default function AdminDashboard() {
   return (
     <div className="py-8">
       <div className="container-custom">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {adminUser?.email}
-            </span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
+        <AdminHeader
+          title="Admin Dashboard"
+          adminEmail={adminUser?.email}
+          onLogout={handleLogout}
+        />
 
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Manage Coupons</h2>

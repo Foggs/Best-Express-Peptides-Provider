@@ -27,7 +27,7 @@ export function useAdminAuth() {
     localStorage.removeItem("adminUser")
     setAdminToken(null)
     setAdminUser(null)
-    router.push("/admin/login")
+    router.push("/")
   }
 
   return { mounted, adminToken, adminUser, loading, handleLogout }

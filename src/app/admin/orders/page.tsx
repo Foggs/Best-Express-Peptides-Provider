@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, LogOut } from "lucide-react"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { formatPrice } from "@/lib/utils"
 
 interface OrderItem {
@@ -89,8 +89,6 @@ export default function OrdersPage() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken")
-    localStorage.removeItem("adminUser")
     setAdminToken(null)
     setAdminUser(null)
   }
@@ -143,24 +141,12 @@ export default function OrdersPage() {
   return (
     <div className="py-8">
       <div className="container-custom">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => router.push("/admin/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-3xl font-bold">Orders</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {adminUser?.email}
-            </span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
+        <AdminHeader
+          title="Orders"
+          adminEmail={adminUser?.email}
+          showBack
+          onLogout={handleLogout}
+        />
 
         {loading ? (
           <p className="text-muted-foreground">Loading orders...</p>

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, LogOut } from "lucide-react"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { useAdminAuth } from "@/hooks/admin/useAdminAuth"
 import { AddNewProductForm } from "@/components/admin/products/AddNewProductForm"
 import { AddVariantForm } from "@/components/admin/products/AddVariantForm"
@@ -44,22 +44,12 @@ export default function ProductsPage() {
   return (
     <div className="py-8">
       <div className="container-custom">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => router.push("/admin/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-3xl font-bold">Manage Products</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{adminUser?.email}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
+        <AdminHeader
+          title="Manage Products"
+          adminEmail={adminUser?.email}
+          showBack
+          onLogout={handleLogout}
+        />
 
         <AddNewProductForm adminToken={adminToken} />
         <AddVariantForm adminToken={adminToken} />

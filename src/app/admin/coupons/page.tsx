@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AlertCircle, Plus, Trash2, Edit2, ArrowLeft, LogOut } from "lucide-react"
+import { AlertCircle, Plus, Trash2, Edit2 } from "lucide-react"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { formatPrice } from "@/lib/utils"
 
 interface Coupon {
@@ -63,8 +64,6 @@ export default function CouponsPage() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken")
-    localStorage.removeItem("adminUser")
     setAdminToken(null)
     setAdminUser(null)
     setCoupons([])
@@ -208,24 +207,12 @@ export default function CouponsPage() {
   return (
     <div className="py-8">
       <div className="container-custom">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => router.push("/admin/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-3xl font-bold">Manage Coupons</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {adminUser?.email}
-            </span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
+        <AdminHeader
+          title="Manage Coupons"
+          adminEmail={adminUser?.email}
+          showBack
+          onLogout={handleLogout}
+        />
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded p-4 mb-6 flex items-center gap-2 text-red-800">

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LogOut, ShoppingBag, Tag, Package, Home } from "lucide-react"
+import { ShoppingBag, Tag, Package } from "lucide-react"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 
 interface AdminUser {
   id: string
@@ -29,11 +30,8 @@ export default function AdminDashboard() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken")
-    localStorage.removeItem("adminUser")
     setAdminToken(null)
     setAdminUser(null)
-    router.push("/")
   }
 
   if (!mounted) {
@@ -65,22 +63,11 @@ export default function AdminDashboard() {
   return (
     <div className="py-8">
       <div className="container-custom">
-        <div className="flex justify-between items-center mb-12">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {adminUser?.email}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => router.push("/")}>
-              <Home className="h-4 w-4 mr-2" />
-              Home
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
+        <AdminHeader
+          title="Admin Dashboard"
+          adminEmail={adminUser?.email}
+          onLogout={handleLogout}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card 
