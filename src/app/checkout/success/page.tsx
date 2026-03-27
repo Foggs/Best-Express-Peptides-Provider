@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/store/cart"
 import { formatPrice } from "@/lib/utils"
-import { CheckCircle, Package, Mail, ArrowRight, Printer } from "lucide-react"
+import { CheckCircle, Package, Mail, ArrowRight, Printer, FileDown } from "lucide-react"
 
 interface OrderSummary {
   items: {
@@ -209,6 +209,18 @@ function SuccessContent() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
+              </div>
+
+              <div className="flex justify-center mt-4 print-hidden">
+                <a
+                  href="/pdfs/Certificates_of_Analysis.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                >
+                  <FileDown className="h-4 w-4" />
+                  <span className="font-bold">Download Certificate of Analysis</span>
+                </a>
               </div>
             </CardContent>
           </Card>

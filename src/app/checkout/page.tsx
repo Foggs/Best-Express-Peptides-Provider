@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/store/cart"
 import { formatPrice } from "@/lib/utils"
-import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin, AlertCircle, Tag, X } from "lucide-react"
+import { ArrowLeft, Lock, CreditCard, AlertTriangle, Loader2, MapPin, AlertCircle, Tag, X, FileDown } from "lucide-react"
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
@@ -644,6 +644,15 @@ export default function CheckoutPage() {
                     </>
                   )}
                 </Button>
+                <a
+                  href="/pdfs/Certificates_of_Analysis.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                >
+                  <FileDown className="h-4 w-4" />
+                  <span className="font-bold">Download Certificate of Analysis</span>
+                </a>
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Lock className="h-3 w-3" />
                   Your order details will be sent securely

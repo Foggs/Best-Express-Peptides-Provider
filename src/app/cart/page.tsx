@@ -15,7 +15,8 @@ import {
   ArrowLeft, 
   ArrowRight,
   AlertTriangle,
-  ShoppingBag
+  ShoppingBag,
+  FileDown
 } from "lucide-react"
 
 export default function CartPage() {
@@ -173,6 +174,16 @@ export default function CartPage() {
                   </Link>
                 </Button>
                 
+                <a
+                  href="/pdfs/Certificates_of_Analysis.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors w-full justify-center"
+                >
+                  <FileDown className="h-4 w-4" />
+                  <span className="font-bold">Download Certificate of Analysis</span>
+                </a>
+
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 w-full">
                   <div className="flex gap-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
