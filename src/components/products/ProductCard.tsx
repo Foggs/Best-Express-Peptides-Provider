@@ -27,6 +27,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  if (product.variants.length === 0) return null
+
   const lowestPrice = Math.min(...product.variants.map(v => v.price))
 
   return (

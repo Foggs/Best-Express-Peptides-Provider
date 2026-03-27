@@ -31,12 +31,15 @@ interface ProductDetailsProps {
 }
 
 export function ProductDetails({ product, relatedProducts }: ProductDetailsProps) {
-  const [selectedVariant, setSelectedVariant] = useState(product.variants[0])
+  const hasVariants = product.variants.length > 0
+  const [selectedVariant, setSelectedVariant] = useState(product.variants[0] || null)
   const [quantity, setQuantity] = useState(1)
   const { addItem } = useCartStore()
   const { toast } = useToast()
 
   const handleAddToCart = () => {
+    if (!selectedVariant) return
+
     addItem({
       id: `${product.id}-${selectedVariant.id}`,
       productId: product.id,
@@ -54,6 +57,24 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
       title: "Added to cart",
       description: `${quantity}x ${product.name} (${selectedVariant.name}) has been added to your cart.`,
     })
+  }
+
+  if (!hasVariants) {
+    return (
+      <div className="py-8">
+        <div className="container-custom max-w-6xl">
+          <Link href="/peptides" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Products
+          </Link>
+          <div className="text-center py-16">
+            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
+            <p className="text-muted-foreground">This product is currently unavailable. Please check back later.</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -22,7 +22,8 @@ export default async function ProductPage({ params }: PageProps) {
     product.slug
   )
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bestexpresspeptides.com"
-  const firstVariant = product.variants[0]
+  const hasVariants = product.variants.length > 0
+  const firstVariant = hasVariants ? product.variants[0] : null
   const lowestPrice = firstVariant?.price || 0
   const productSku = firstVariant?.sku || product.slug
 

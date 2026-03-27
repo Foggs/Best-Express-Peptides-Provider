@@ -321,7 +321,7 @@ export async function getCachedProducts(options?: {
 }): Promise<CachedProductListItem[]> {
   const allProducts = await getCache()
 
-  let filtered = allProducts.filter(p => p.active)
+  let filtered = allProducts.filter(p => p.active && p.variants.length > 0)
 
   if (options?.category) {
     filtered = filtered.filter(p =>
@@ -341,14 +341,14 @@ export async function getCachedProducts(options?: {
     filtered.sort((a, b) => a.name.localeCompare(b.name))
   } else if (options?.sort === 'price-asc') {
     filtered.sort((a, b) => {
-      const aMin = Math.min(...a.variants.map(v => v.price))
-      const bMin = Math.min(...b.variants.map(v => v.price))
+      const aMin = a.variants.length > 0 ? Math.min(...a.variants.map(v => v.price)) : Infinity
+      const bMin = b.variants.length > 0 ? Math.min(...b.variants.map(v => v.price)) : Infinity
       return aMin - bMin
     })
   } else if (options?.sort === 'price-desc') {
     filtered.sort((a, b) => {
-      const aMax = Math.max(...a.variants.map(v => v.price))
-      const bMax = Math.max(...b.variants.map(v => v.price))
+      const aMax = a.variants.length > 0 ? Math.max(...a.variants.map(v => v.price)) : 0
+      const bMax = b.variants.length > 0 ? Math.max(...b.variants.map(v => v.price)) : 0
       return bMax - aMax
     })
   }
@@ -377,7 +377,7 @@ export async function getCachedFeaturedProducts(): Promise<CachedProductListItem
   const allProducts = await getCache()
 
   return allProducts
-    .filter(p => p.featured && p.active)
+    .filter(p => p.featured && p.active && p.variants.length > 0)
     .slice(0, 6)
     .map(p => ({
       id: p.id,
@@ -414,6 +414,7 @@ export async function getCachedRelatedProducts(
     .filter(p =>
       p.slug !== excludeSlug &&
       p.active &&
+      p.variants.length > 0 &&
       p.categories.some(c => categorySlugs.includes(c.slug))
     )
     .slice(0, 4)
