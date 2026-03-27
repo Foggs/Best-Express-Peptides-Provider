@@ -65,7 +65,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
         <div className="container-custom max-w-6xl">
           <Link href="/peptides" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Products
+            Back to Peptides
           </Link>
           <div className="text-center py-16">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />

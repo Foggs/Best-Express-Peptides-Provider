@@ -36,15 +36,17 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <>
-      <ProductJsonLd
-        name={product.name}
-        description={product.shortDescription || product.description.substring(0, 160)}
-        image=""
-        sku={productSku}
-        price={lowestPrice}
-        category={product.category.name}
-        url={`${baseUrl}/peptides/${product.slug}`}
-      />
+      {hasVariants && (
+        <ProductJsonLd
+          name={product.name}
+          description={product.shortDescription || product.description.substring(0, 160)}
+          image=""
+          sku={productSku}
+          price={lowestPrice}
+          category={product.category.name}
+          url={`${baseUrl}/peptides/${product.slug}`}
+        />
+      )}
       <BreadcrumbJsonLd items={breadcrumbItems} />
       <ProductDetails product={product} relatedProducts={relatedProducts} />
     </>
