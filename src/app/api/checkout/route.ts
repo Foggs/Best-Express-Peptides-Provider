@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           { status: 400, headers: getRateLimitHeaders(rateLimitResult.remaining, 50) }
         )
       }
-      if (item.price !== variant.price) {
+      if (item.price !== undefined && item.price !== variant.price) {
         console.warn(
           `Price mismatch for ${product.name} (${variant.name}): client sent ${item.price}, server price is ${variant.price}`
         )
