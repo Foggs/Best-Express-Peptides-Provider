@@ -40,10 +40,10 @@ packages = [
 
 [userenv.shared]
 NEXT_PUBLIC_GA_ID = "G-XXXXXXXXXX"
-GOOGLE_SHEET_ID = "1kUInxIBWDL2XdSS5WeRtrRhYzxHYzWVUiU8vNjY8dHA"
 NEXT_PUBLIC_GOOGLE_SHEET_ID = "1kUInxIBWDL2XdSS5WeRtrRhYzxHYzWVUiU8vNjY8dHA"
 ADMIN_EMAIL = "brian@cellingpeptides.com"
 NEXTAUTH_URL = "https://02a065a9-bc9c-4bb8-affa-cce36813f09a-00-1ztevwhmutsg1.spock.replit.dev"
+GOOGLE_SHEET_ID = "1EGf_km-dsZcCrAKsmB4892IJQ_-lsdw5rYqOn-o0I8o"
 
 [workflows]
 runButton = "Project"
