@@ -1,14 +1,35 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { checkAuthRateLimit } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
+  const rateLimit = await checkAuthRateLimit(request)
+  if (rateLimit.limited) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Please try again later." },
+      {
+        status: 429,
+        headers: rateLimit.retryAfter
+          ? { "Retry-After": String(rateLimit.retryAfter) }
+          : undefined,
+      }
+    )
+  }
+
   try {
     const { name, email, password } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
+        { status: 400 }
+      )
+    }
+
+    if (typeof password !== "string" || password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters" },
         { status: 400 }
       )
     }

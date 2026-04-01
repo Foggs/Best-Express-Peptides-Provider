@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { recordSignInFailure } from "@/lib/rate-limit"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -18,7 +19,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -28,6 +29,8 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (!user || !user.password) {
+          const ip = extractIpFromReq(req)
+          await recordSignInFailure(ip)
           return null
         }
 
@@ -37,6 +40,8 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!passwordMatch) {
+          const ip = extractIpFromReq(req)
+          await recordSignInFailure(ip)
           return null
         }
 
@@ -69,4 +74,15 @@ export const authOptions: NextAuthOptions = {
       return session
     },
   },
+}
+
+function extractIpFromReq(
+  req: { headers?: Record<string, string | string[] | undefined> } | undefined,
+): string {
+  if (!req?.headers) return 'unknown'
+  const forwarded = req.headers['x-forwarded-for']
+  const realIp = req.headers['x-real-ip']
+  const forwardedStr = Array.isArray(forwarded) ? forwarded[0] : forwarded
+  const realIpStr = Array.isArray(realIp) ? realIp[0] : realIp
+  return forwardedStr?.split(',')[0].trim() || realIpStr || 'unknown'
 }
