@@ -44,7 +44,20 @@ export function Header() {
                   Sign Out
                 </Button>
               </div>
-            ) : null}
+            ) : (
+              <div className="hidden md:flex items-center gap-2">
+                <Link href="/auth/signin">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
 
             <Link href="/admin/login" aria-label="Admin">
               <Button variant="outline" size="sm">
@@ -99,7 +112,16 @@ export function Header() {
                     Sign Out
                   </button>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  <Link href="/auth/signin" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                    Sign In
+                  </Link>
+                  <Link href="/auth/signup" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}
