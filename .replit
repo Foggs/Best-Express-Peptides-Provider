@@ -40,7 +40,6 @@ packages = [
 
 [userenv.shared]
 NEXT_PUBLIC_GA_ID = "G-XXXXXXXXXX"
-ADMIN_EMAIL = "brian@cellingpeptides.com"
 NEXTAUTH_URL = "https://02a065a9-bc9c-4bb8-affa-cce36813f09a-00-1ztevwhmutsg1.spock.replit.dev"
 GOOGLE_SHEET_ID = "1EGf_km-dsZcCrAKsmB4892IJQ_-lsdw5rYqOn-o0I8o"
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = "/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium-browser"
