@@ -35,26 +35,51 @@ async function main() {
   if (!adminEmail || !adminPassword) {
     console.warn('⚠ ADMIN_EMAIL or ADMIN_PASSWORD not set — skipping admin user seed.')
     console.warn('  Set both environment variables and re-run to create the admin account.')
-    return
+  } else {
+    const hashedPassword = await bcrypt.hash(adminPassword, 12)
+
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        password: hashedPassword,
+        isAdmin: true,
+      },
+      create: {
+        email: adminEmail,
+        name: 'Admin',
+        password: hashedPassword,
+        isAdmin: true,
+      },
+    })
+
+    console.log(`✓ Admin user seeded: ${adminEmail}`)
   }
 
-  const hashedPassword = await bcrypt.hash(adminPassword, 12)
+  const testEmail = process.env.TEST_USER_EMAIL
+  const testPassword = process.env.TEST_USER_PASSWORD
 
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      password: hashedPassword,
-      isAdmin: true,
-    },
-    create: {
-      email: adminEmail,
-      name: 'Admin',
-      password: hashedPassword,
-      isAdmin: true,
-    },
-  })
+  if (!testEmail || !testPassword) {
+    console.warn('⚠ TEST_USER_EMAIL or TEST_USER_PASSWORD not set — skipping test user seed.')
+    console.warn('  Set both environment variables and re-run to create the test account.')
+  } else {
+    const hashedTestPassword = await bcrypt.hash(testPassword, 12)
 
-  console.log(`✓ Admin user seeded: ${adminEmail}`)
+    await prisma.user.upsert({
+      where: { email: testEmail },
+      update: {
+        password: hashedTestPassword,
+        isAdmin: false,
+      },
+      create: {
+        email: testEmail,
+        name: 'Test User',
+        password: hashedTestPassword,
+        isAdmin: false,
+      },
+    })
+
+    console.log(`✓ Test user seeded: ${testEmail}`)
+  }
 }
 
 main()

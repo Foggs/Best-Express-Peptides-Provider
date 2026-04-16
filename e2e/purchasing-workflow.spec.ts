@@ -29,7 +29,7 @@ test.describe('Homepage section visibility', () => {
 
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByRole('button', { name: /sign in with email/i }).click();
 
     await page.waitForURL('/', { timeout: 30000 });
     await page.waitForLoadState('networkidle');
