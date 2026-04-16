@@ -6,6 +6,11 @@ const uniqueName = `TestPeptide${Date.now().toString().slice(-6)}`;
 
 test.describe('Admin Add New Product with AI Categories', () => {
   test('should submit product, show AI-generated category badges, save to Google Sheet, and verify product page', async ({ page }) => {
+    if (!process.env.PLAYWRIGHT_ADMIN_INTEGRATION) {
+      test.skip(true, 'Set PLAYWRIGHT_ADMIN_INTEGRATION=true to run this live integration test');
+      return;
+    }
+
     await page.goto('/admin');
 
     const goToLogin = page.getByRole('button', { name: /Go to Login/i });

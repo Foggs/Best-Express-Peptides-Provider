@@ -57,6 +57,10 @@ author = "agent"
 task = "workflow.run"
 args = "Next.js Development Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "e2e"
+
 [[workflows.workflow]]
 name = "Next.js Development Server"
 author = "agent"
@@ -69,6 +73,17 @@ waitForPort = 5000
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow]]
+name = "e2e"
+author = "agent"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
@@ -76,6 +91,10 @@ externalPort = 80
 [[ports]]
 localPort = 5904
 externalPort = 3000
+
+[[ports]]
+localPort = 9323
+externalPort = 3001
 
 [deployment]
 deploymentTarget = "autoscale"

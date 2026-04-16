@@ -131,6 +131,7 @@ test.describe('Product Detail Page', () => {
 
 test.describe('Add to Cart', () => {
   test('should add product to cart successfully', async ({ page }) => {
+    await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     
     await page.goto('/peptides');
@@ -170,6 +171,7 @@ test.describe('Cart Page', () => {
   });
 
   test('should show empty cart message when cart is empty', async ({ page }) => {
+    await page.goto('/');
     await page.evaluate(() => localStorage.removeItem('peptide-cart'));
     
     await page.goto('/cart');
@@ -184,6 +186,7 @@ test.describe('Cart Page', () => {
 
 test.describe('Checkout Flow', () => {
   test('should have checkout button in cart when items present', async ({ page }) => {
+    await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     
     await page.goto('/peptides');
