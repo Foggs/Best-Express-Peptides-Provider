@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
+import { getJwtSecret } from "@/lib/admin-auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,11 +64,10 @@ export async function POST(request: NextRequest) {
         name: user.name,
         isAdmin: user.isAdmin,
       },
-      process.env.JWT_SECRET || "your-secret-key",
+      getJwtSecret(),
       { expiresIn: "24h" }
     )
 
-    // Return success response
     return NextResponse.json(
       {
         success: true,

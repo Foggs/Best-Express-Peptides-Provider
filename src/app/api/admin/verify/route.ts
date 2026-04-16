@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
+import { getJwtSecret } from "@/lib/admin-auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +14,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key")
+    const decoded = jwt.verify(token, getJwtSecret())
 
     if (!(decoded as any).isAdmin) {
       return NextResponse.json(
