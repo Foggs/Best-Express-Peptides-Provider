@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const replitDomain = process.env.REPLIT_DEV_DOMAIN
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -13,7 +15,7 @@ const nextConfig = {
     qualities: [75, 80, 90],
   },
   compress: true,
-  allowedDevOrigins: ['*'],
+  allowedDevOrigins: replitDomain ? [replitDomain] : [],
   experimental: {
     serverActions: {
       allowedOrigins: ['*'],

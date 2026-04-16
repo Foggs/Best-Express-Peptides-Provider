@@ -9,6 +9,7 @@ import { ShoppingCart } from "lucide-react"
 import { PeptideHero } from "@/components/products/PeptideHero"
 
 interface ProductCardProps {
+  priority?: boolean
   product: {
     id: string
     name: string
@@ -26,7 +27,7 @@ interface ProductCardProps {
   }
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, priority = false }: ProductCardProps) {
   if (product.variants.length === 0) return null
 
   const lowestPrice = Math.min(...product.variants.map(v => v.price))
@@ -34,7 +35,7 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <Link href={`/peptides/${product.slug}`} title={`View ${product.name} details`}>
-        <PeptideHero name={product.name} />
+        <PeptideHero name={product.name} priority={priority} />
       </Link>
 
       <CardContent className="p-4">

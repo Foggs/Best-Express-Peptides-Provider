@@ -32,8 +32,7 @@ export function Header() {
                 alt="BestExpressPeptides"
                 width={296}
                 height={40}
-                className="h-10"
-                style={{ width: "auto" }}
+                style={{ height: "2.5rem", width: "auto" }}
                 priority
               />
             </Link>
