@@ -2,6 +2,43 @@ import { test, expect } from '@playwright/test';
 
 test.setTimeout(120000);
 
+test.describe('Homepage section visibility', () => {
+  test('logged-out visitor does not see Featured Peptides or Browse by Category', async ({ page }) => {
+    await page.context().clearCookies();
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByRole('heading', { name: 'Featured Peptides', exact: true })).not.toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Browse by Category', exact: true })).not.toBeVisible();
+  });
+
+  test('logged-in user sees Featured Peptides and Browse by Category', async ({ page }) => {
+    const email = process.env.TEST_USER_EMAIL;
+    const password = process.env.TEST_USER_PASSWORD;
+
+    if (!email || !password) {
+      test.skip(true, 'TEST_USER_EMAIL and TEST_USER_PASSWORD env vars are required for this test');
+      return;
+    }
+
+    await page.context().clearCookies();
+
+    await page.goto('/auth/signin');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel(/email/i).fill(email);
+    await page.getByLabel(/password/i).fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+
+    await page.waitForURL('/', { timeout: 30000 });
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByRole('heading', { name: 'Featured Peptides', exact: true })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('heading', { name: 'Browse by Category', exact: true })).toBeVisible({ timeout: 30000 });
+  });
+});
+
 test.describe('Product Catalog', () => {
   test('should display products on the catalog page', async ({ page }) => {
     await page.goto('/peptides');
