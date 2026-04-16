@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper"
@@ -9,11 +9,20 @@ import { ChunkErrorHandler } from "@/components/ChunkErrorHandler"
 
 const inter = Inter({ subsets: ["latin"] })
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#1e3a8a",
+}
+
 export const metadata: Metadata = {
   title: "BestExpressPeptides - Premium Research Peptides | Laboratory Grade",
   description: "Premium quality research peptides for scientific study. 99%+ purity, lab-tested, research-grade compounds. HPLC verified. For research use only.",
   keywords: "research peptides, laboratory peptides, BPC-157, TB-500, Semaglutide, peptide research",
   authors: [{ name: "BestExpressPeptides" }],
+  appleWebApp: {
+    capable: true,
+  },
   openGraph: {
     type: "website",
     url: "https://bestexpresspeptides.com",
@@ -32,6 +41,21 @@ export const metadata: Metadata = {
   },
 }
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "BestExpressPeptides",
+  url: "https://bestexpresspeptides.com",
+  logo: "https://bestexpresspeptides.com/logo.png",
+  description: "Premium quality research peptides for scientific study",
+  sameAs: [],
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "[contact-number]",
+    contactType: "Customer Support",
+  },
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -39,31 +63,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#1e3a8a" />
+      <body className={inter.className}>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "BestExpressPeptides",
-              url: "https://bestexpresspeptides.com",
-              logo: "https://bestexpresspeptides.com/logo.png",
-              description: "Premium quality research peptides for scientific study",
-              sameAs: [],
-              contactPoint: {
-                "@type": "ContactPoint",
-                telephone: "[contact-number]",
-                contactType: "Customer Support",
-              },
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-      </head>
-      <body className={inter.className}>
         <Providers>
           <ChunkErrorHandler />
           <a href="#main-content" className="sr-only focus:not-sr-only">
