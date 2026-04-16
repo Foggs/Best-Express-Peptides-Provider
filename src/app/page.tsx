@@ -17,7 +17,6 @@ import {
   Microscope, 
   ArrowRight,
   CheckCircle,
-  Lock,
 } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
@@ -112,7 +111,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {session ? (
+      {session && (
         <>
           <Suspense fallback={<FeaturedProductsSkeleton />}>
             <FeaturedProducts />
@@ -122,26 +121,6 @@ export default async function HomePage() {
             <BrowseByCategory />
           </Suspense>
         </>
-      ) : (
-        <section className="py-20 bg-gray-50">
-          <div className="container-custom text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-              <Lock className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3">Sign in to Browse Our Catalog</h2>
-            <p className="text-muted-foreground max-w-md mx-auto mb-8">
-              Create a free account or sign in to explore our full range of research peptides and featured products.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button size="lg" asChild>
-                <Link href="/auth/signin">Sign In</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/auth/signup">Create Account</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
       )}
 
       <section className="py-16 bg-gray-50">
