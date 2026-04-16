@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ShoppingBag, Tag, Package } from "lucide-react"
+import { ShoppingBag, Tag, Package, KeyRound } from "lucide-react"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 
 interface AdminUser {
@@ -109,6 +109,22 @@ export default function AdminDashboard() {
             <CardContent>
               <p className="text-muted-foreground mb-4">Create, edit, and manage discount coupons for your store.</p>
               <Button className="w-full">Open Coupons</Button>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer" 
+            onClick={() => router.push("/admin/change-password")}
+          >
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <KeyRound className="h-6 w-6 text-orange-600" />
+                <CardTitle>Change Password</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">Update your admin account password securely.</p>
+              <Button className="w-full">Change Password</Button>
             </CardContent>
           </Card>
         </div>
