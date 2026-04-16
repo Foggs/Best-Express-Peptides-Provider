@@ -5,6 +5,7 @@ import { LayoutWrapper } from "@/components/layout/LayoutWrapper"
 import { Toaster } from "@/components/ui/toaster"
 import { Providers } from "./providers"
 import { GoogleAnalytics } from "@/components/GoogleAnalytics"
+import { ChunkErrorHandler } from "@/components/ChunkErrorHandler"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -64,6 +65,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
+          <ChunkErrorHandler />
           <a href="#main-content" className="sr-only focus:not-sr-only">
             Skip to main content
           </a>

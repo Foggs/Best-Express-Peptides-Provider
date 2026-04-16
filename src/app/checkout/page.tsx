@@ -119,6 +119,12 @@ export default function CheckoutPage() {
     }
   }, [sessionStatus, router])
 
+  useEffect(() => {
+    if (mounted && items.length === 0) {
+      router.push("/cart")
+    }
+  }, [mounted, items.length, router])
+
   // Validation functions
   const validateEmail = (value: string): string | undefined => {
     if (!value) return "Email is required"
@@ -250,7 +256,6 @@ export default function CheckoutPage() {
   }
 
   if (items.length === 0) {
-    router.push("/cart")
     return null
   }
 
