@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
@@ -40,9 +41,15 @@ export default async function HomePage() {
       <OrganizationJsonLd />
       <WebsiteJsonLd />
       <div>
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 to-transparent"></div>
+      <section className="relative text-white overflow-hidden">
+        <Image
+          src="/images/bckgrd.png"
+          alt=""
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-blue-900/65"></div>
         
         <div className="container-custom relative py-20 md:py-32">
           <div className="max-w-3xl">

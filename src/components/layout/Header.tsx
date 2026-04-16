@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
-import { FlaskIcon, CartIcon, MenuIcon, CloseIcon, UserIcon } from "@/components/icons"
+import { CartIcon, MenuIcon, CloseIcon, UserIcon } from "@/components/icons"
 import { Home, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/cart"
@@ -25,9 +26,15 @@ export function Header() {
       <div className="container-custom">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2" aria-label="BestExpressPeptides - Home">
-              <FlaskIcon size={32} className="text-primary" />
-              <span className="text-xl font-bold text-primary">BestExpressPeptides</span>
+            <Link href="/" aria-label="BestExpressPeptides - Home">
+              <Image
+                src="/images/besttestexpress_logo.png"
+                alt="BestExpressPeptides"
+                width={1492}
+                height={202}
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
           </div>
 
