@@ -2,6 +2,43 @@ import { test, expect } from '@playwright/test';
 
 test.setTimeout(120000);
 
+test.describe('Unauthenticated API access', () => {
+  test('GET /api/products returns 401 without a session', async ({ request }) => {
+    const response = await request.get('/api/products');
+    expect(response.status()).toBe(401);
+  });
+
+  test('GET /api/categories returns 401 without a session', async ({ request }) => {
+    const response = await request.get('/api/categories');
+    expect(response.status()).toBe(401);
+  });
+
+  test('POST /api/checkout returns 401 without a session', async ({ request }) => {
+    const response = await request.post('/api/checkout', {
+      data: {
+        items: [{ slug: 'test-product', variantName: '5mg', quantity: 1 }],
+        email: 'guest@example.com',
+        shippingAddress: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+          address: '123 Main St',
+          city: 'Springfield',
+          state: 'IL',
+          zipCode: '62701',
+        },
+      },
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test('POST /api/coupon returns 401 without a session', async ({ request }) => {
+    const response = await request.post('/api/coupon', {
+      data: { code: 'TESTCODE', subtotal: 5000 },
+    });
+    expect(response.status()).toBe(401);
+  });
+});
+
 test.describe('Homepage section visibility', () => {
   test('logged-out visitor does not see Featured Peptides or Browse by Category', async ({ page }) => {
     await page.context().clearCookies();

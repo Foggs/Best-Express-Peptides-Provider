@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit"
-import { sendOrderEmail } from "@/lib/orderEmail"
 import { checkStock, decrementStock, getCachedProductBySlug } from "@/lib/productCache"
 
 const ORDER_NUMBER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -15,6 +14,11 @@ function generateOrderNumber(): string {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const rateLimitResult = rateLimit(request, 50, 60000)
   if (!rateLimitResult.success) {
     return NextResponse.json(
@@ -122,16 +126,13 @@ export async function POST(request: NextRequest) {
 
     let userId: string | null = null
     try {
-      const authSession = await getServerSession(authOptions)
-      if (authSession?.user?.email) {
-        const user = await prisma.user.findUnique({
-          where: { email: authSession.user.email },
-          select: { id: true },
-        })
-        if (user) userId = user.id
-      }
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      })
+      if (user) userId = user.id
     } catch (authError) {
-      console.error("Failed to resolve user session for order:", authError)
+      console.error("Failed to resolve user ID for order:", authError)
     }
 
     let orderNumber: string | null = null
@@ -202,22 +203,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const emailResult = await sendOrderEmail({
-      email,
-      items: verifiedItems.map((item) => ({
-        name: item.name,
-        variantName: item.variantName,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-      shippingAddress,
-      subtotal,
-      shipping,
-      discount,
-      total,
-      couponCode: coupon?.code,
-      orderNumber,
-    })
+    let emailResult: { success: boolean; error?: string } = { success: false }
+    try {
+      const { sendOrderEmail } = await import("@/lib/orderEmail")
+      emailResult = await sendOrderEmail({
+        email,
+        items: verifiedItems.map((item) => ({
+          name: item.name,
+          variantName: item.variantName,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        shippingAddress,
+        subtotal,
+        shipping,
+        discount,
+        total,
+        couponCode: coupon?.code,
+        orderNumber,
+      })
+    } catch (importError) {
+      console.error("Failed to import orderEmail module:", importError)
+    }
 
     if (!emailResult.success) {
       console.error("Failed to send order confirmation email:", emailResult.error)

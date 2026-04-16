@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -88,6 +89,7 @@ function InputWithError({
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const { status: sessionStatus } = useSession()
   const { items, getTotal, clearCart } = useCartStore()
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -110,6 +112,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/auth/signin?callbackUrl=/checkout")
+    }
+  }, [sessionStatus, router])
 
   // Validation functions
   const validateEmail = (value: string): string | undefined => {
@@ -229,7 +237,7 @@ export default function CheckoutPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  if (!mounted) {
+  if (!mounted || sessionStatus === "loading" || sessionStatus === "unauthenticated") {
     return (
       <div className="py-16">
         <div className="container-custom">
@@ -272,6 +280,8 @@ export default function CheckoutPage() {
       if (response.ok) {
         setAppliedCoupon({ code: couponCode.trim(), discount: data.discount })
         setCouponCode("")
+      } else if (response.status === 401) {
+        router.push("/auth/signin?callbackUrl=/checkout")
       } else {
         setCouponError(data.message || "Invalid coupon code")
       }
@@ -331,6 +341,10 @@ export default function CheckoutPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/auth/signin?callbackUrl=/checkout")
+          return
+        }
         if (data.stockError && data.details) {
           const stockMsg = "Some items are no longer available:\n\n" + data.details.join("\n") + "\n\nPlease update your cart and try again."
           alert(stockMsg)
