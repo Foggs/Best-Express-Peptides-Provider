@@ -1,33 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
+import { getJwtSecret } from "@/lib/jwt"
 
-export function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error(
-      "JWT_SECRET environment variable is not set. " +
-      "Set it to a strong random string before starting the server."
-    )
-  }
-  return secret
-}
+export { getJwtSecret } from "@/lib/jwt"
 
 export async function verifyAdminAuth(request: NextRequest) {
+  const authHeader = request.headers.get("authorization")
+  if (!authHeader?.startsWith("Bearer ")) {
+    return { valid: false, user: null }
+  }
+
+  // getJwtSecret() throws if JWT_SECRET is not set — intentionally not caught
+  // so a missing environment variable surfaces as a server configuration error,
+  // not as a silent auth failure.
+  const secret = getJwtSecret()
+  const token = authHeader.slice(7)
+
   try {
-    const authHeader = request.headers.get("authorization")
-    if (!authHeader?.startsWith("Bearer ")) {
-      return { valid: false, user: null }
-    }
-
-    const token = authHeader.slice(7)
-    const decoded = jwt.verify(token, getJwtSecret()) as any
-
+    const decoded = jwt.verify(token, secret) as any
     if (!decoded.isAdmin) {
       return { valid: false, user: null }
     }
-
     return { valid: true, user: decoded }
-  } catch (error) {
+  } catch {
     return { valid: false, user: null }
   }
 }

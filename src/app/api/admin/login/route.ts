@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { getJwtSecret } from "@/lib/admin-auth"
+import { getJwtSecret } from "@/lib/jwt"
 
 export async function POST(request: NextRequest) {
+  // getJwtSecret() throws if JWT_SECRET is not set — intentionally outside
+  // the catch block so a misconfigured server fails loudly, not silently.
+  const jwtSecret = getJwtSecret()
+
   try {
     const body = await request.json()
     const { email, password } = body
 
-    // Validate required fields
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -17,12 +20,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email },
     })
 
-    // Check if user exists
     if (!user) {
       return NextResponse.json(
         { error: "Invalid email or password" },
@@ -30,7 +31,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has a password (not just OAuth)
     if (!user.password) {
       return NextResponse.json(
         { error: "This account uses OAuth login only" },
@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password)
 
     if (!passwordMatch) {
@@ -48,7 +47,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is admin
     if (!user.isAdmin) {
       return NextResponse.json(
         { error: "Unauthorized: Admin access required" },
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate JWT token (valid for 24 hours)
+    // 24-hour expiry balances session convenience with security
     const token = jwt.sign(
       {
         id: user.id,
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         isAdmin: user.isAdmin,
       },
-      getJwtSecret(),
+      jwtSecret,
       { expiresIn: "24h" }
     )
 
