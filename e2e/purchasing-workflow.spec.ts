@@ -2,21 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.setTimeout(120000);
 
-async function handleAgeVerification(page: any) {
-  try {
-    const ageVerifyButton = page.getByRole('button', { name: /I am 21/i });
-    await ageVerifyButton.waitFor({ state: 'visible', timeout: 5000 });
-    await ageVerifyButton.click();
-    await page.waitForTimeout(500);
-  } catch {
-  }
-}
-
 test.describe('Product Catalog', () => {
   test('should display products on the catalog page', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.goto('/peptides');
     await page.waitForLoadState('networkidle');
     
@@ -30,9 +17,6 @@ test.describe('Product Catalog', () => {
   });
 
   test('should display product prices', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.goto('/peptides');
     await page.waitForLoadState('networkidle');
     
@@ -43,9 +27,6 @@ test.describe('Product Catalog', () => {
 
 test.describe('Product Detail Page', () => {
   test('should display product details when clicking a product', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.goto('/peptides');
     await page.waitForLoadState('networkidle');
     
@@ -61,9 +42,6 @@ test.describe('Product Detail Page', () => {
   });
 
   test('should show add to cart button on product page', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.goto('/peptides');
     await page.waitForLoadState('networkidle');
     
@@ -79,9 +57,6 @@ test.describe('Product Detail Page', () => {
 
 test.describe('Add to Cart', () => {
   test('should add product to cart successfully', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.evaluate(() => localStorage.clear());
     
     await page.goto('/peptides');
@@ -114,9 +89,6 @@ test.describe('Add to Cart', () => {
 
 test.describe('Cart Page', () => {
   test('should display cart page', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.goto('/cart');
     await page.waitForLoadState('networkidle');
     
@@ -124,9 +96,6 @@ test.describe('Cart Page', () => {
   });
 
   test('should show empty cart message when cart is empty', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.evaluate(() => localStorage.removeItem('peptide-cart'));
     
     await page.goto('/cart');
@@ -141,9 +110,6 @@ test.describe('Cart Page', () => {
 
 test.describe('Checkout Flow', () => {
   test('should have checkout button in cart when items present', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.evaluate(() => localStorage.clear());
     
     await page.goto('/peptides');
@@ -180,9 +146,6 @@ test.describe('Checkout Flow', () => {
 
 test.describe('Order Success Page', () => {
   test('should display success page content', async ({ page }) => {
-    await page.goto('/');
-    await handleAgeVerification(page);
-    
     await page.goto('/checkout/success?session_id=test_session');
     await page.waitForLoadState('networkidle');
     
