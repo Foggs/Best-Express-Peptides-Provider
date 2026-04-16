@@ -30,8 +30,8 @@ export function Header() {
               <Image
                 src="/images/besttestexpress_logo.png"
                 alt="BestExpressPeptides"
-                width={1492}
-                height={202}
+                width={296}
+                height={40}
                 className="h-10 w-auto"
                 priority
               />
