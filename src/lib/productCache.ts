@@ -154,27 +154,6 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
 
   if (productRows.length < 2) return []
 
-  const productHeaders = productRows[0].map((h: string) => h.trim().toLowerCase())
-  const productData: SheetProduct[] = productRows.slice(1).map((row: string[]) => {
-    const obj: any = {}
-    productHeaders.forEach((header: string, index: number) => {
-      obj[header] = row[index] || ''
-    })
-    return obj as SheetProduct
-  })
-
-  let variantData: SheetVariant[] = []
-  if (variantRows.length >= 2) {
-    const variantHeaders = variantRows[0].map((h: string) => h.trim().toLowerCase())
-    variantData = variantRows.slice(1).map((row: string[]) => {
-      const obj: any = {}
-      variantHeaders.forEach((header: string, index: number) => {
-        obj[header] = row[index] || ''
-      })
-      return obj as SheetVariant
-    })
-  }
-
   const headerMap: Record<string, string> = {
     'slug': 'slug',
     'name': 'name',
