@@ -213,8 +213,7 @@ export async function POST(request: NextRequest) {
 
     let emailResult: { success: boolean; error?: string } = { success: false }
     try {
-      const { sendOrderEmail } = await import("@/lib/orderEmail")
-      emailResult = await sendOrderEmail({
+      emailResult = await checkoutDeps.sendOrderEmail({
         email,
         items: verifiedItems.map((item) => ({
           name: item.name,
@@ -230,18 +229,17 @@ export async function POST(request: NextRequest) {
         couponCode: verifiedCouponCode ?? undefined,
         orderNumber,
       })
-    } catch (importError) {
-      console.error("Failed to import orderEmail module:", importError)
+    } catch (emailError) {
+      console.error("Failed to send order confirmation email:", emailError)
     }
 
     if (!emailResult.success) {
-      console.error("Failed to send order confirmation email:", emailResult.error)
+      console.error("Order email not sent:", emailResult.error)
     }
 
     if (decrementResult.lowStockWarnings.length > 0) {
       try {
-        const { sendLowStockAlert } = await import("@/lib/orderEmail")
-        await sendLowStockAlert(decrementResult.lowStockWarnings)
+        await checkoutDeps.sendLowStockAlert(decrementResult.lowStockWarnings)
       } catch (alertError) {
         console.error("Failed to send low stock alert:", alertError)
       }
