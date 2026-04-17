@@ -10,7 +10,7 @@
     "db:push": "prisma db push",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "test:unit": "npx tsx tests/jwt-secret.test.ts && npx tsx tests/coupon-validation.test.ts && npx tsx tests/checkout-coupon-wiring.test.ts && npx tsx tests/checkout-route-handler.test.ts && npx tsx tests/product-cache-fetch.test.ts && npx tsx tests/product-cache-check-stock.test.ts && npx tsx tests/admin-auth.test.ts && npx tsx tests/checkout-p2002-retry.test.ts",
+    "test:unit": "npx tsx tests/jwt-secret.test.ts && npx tsx tests/coupon-validation.test.ts && npx tsx tests/checkout-coupon-wiring.test.ts && npx tsx tests/checkout-route-handler.test.ts && npx tsx tests/product-cache-fetch.test.ts && npx tsx tests/product-cache-check-stock.test.ts && npx tsx tests/admin-auth.test.ts && npx tsx tests/checkout-p2002-retry.test.ts && npx tsx tests/rate-limit.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report"
