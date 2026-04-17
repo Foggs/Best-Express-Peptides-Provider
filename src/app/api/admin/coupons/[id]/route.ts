@@ -7,7 +7,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Verify admin authentication
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }
@@ -41,7 +41,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Verify admin authentication
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

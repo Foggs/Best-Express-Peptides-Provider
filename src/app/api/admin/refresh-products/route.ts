@@ -4,7 +4,7 @@ import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { clearCache, getCacheStatus, getCachedProducts } from "@/lib/productCache"
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

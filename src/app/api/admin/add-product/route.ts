@@ -27,7 +27,7 @@ function generateSku(productSlug: string, variantName: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

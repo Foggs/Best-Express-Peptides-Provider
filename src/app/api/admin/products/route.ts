@@ -3,7 +3,7 @@ import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { getCachedProducts, getCacheStatus } from "@/lib/productCache"
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

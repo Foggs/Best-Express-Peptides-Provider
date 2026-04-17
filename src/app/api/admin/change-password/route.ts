@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid || !auth.user) {
     return createUnauthorizedResponse()
   }

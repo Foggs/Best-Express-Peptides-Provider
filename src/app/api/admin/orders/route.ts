@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

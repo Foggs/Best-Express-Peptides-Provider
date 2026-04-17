@@ -4,7 +4,7 @@ import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 
 export async function GET(request: NextRequest) {
   // Verify admin authentication
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   // Verify admin authentication
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

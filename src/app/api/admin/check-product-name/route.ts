@@ -5,7 +5,7 @@ import { getUncachableGoogleSheetClient } from "@/lib/googleSheets"
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }

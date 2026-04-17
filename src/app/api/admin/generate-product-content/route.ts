@@ -39,7 +39,7 @@ Respond with ONLY valid JSON, no other text.`
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdminAuth(request)
+  const auth = verifyAdminAuth(request)
   if (!auth.valid) {
     return createUnauthorizedResponse()
   }
