@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 24-hour expiry balances session convenience with security
     const token = jwt.sign(
       {
         id: user.id,

@@ -1,41 +1,34 @@
 import { NextRequest } from 'next/server'
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible'
 
-interface RateLimitStore {
-  [key: string]: { count: number; resetTime: number }
+const generalLimiters = new Map<string, RateLimiterMemory>()
+
+function getGeneralLimiter(limit: number, windowMs: number): RateLimiterMemory {
+  const key = `${limit}-${windowMs}`
+  if (!generalLimiters.has(key)) {
+    generalLimiters.set(key, new RateLimiterMemory({
+      points: limit,
+      duration: Math.ceil(windowMs / 1000),
+    }))
+  }
+  return generalLimiters.get(key)!
 }
 
-const store: RateLimitStore = {}
-
-export function rateLimit(
+export async function rateLimit(
   request: NextRequest,
   limit: number = 100,
   windowMs: number = 60000,
-): { success: boolean; remaining: number } {
+): Promise<{ success: boolean; remaining: number }> {
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-  const key = `${ip}`
-  const now = Date.now()
-
-  if (!store[key]) {
-    store[key] = { count: 1, resetTime: now + windowMs }
-    return { success: true, remaining: limit - 1 }
+  try {
+    const res = await getGeneralLimiter(limit, windowMs).consume(ip)
+    return { success: true, remaining: res.remainingPoints }
+  } catch (err: unknown) {
+    if (isRateLimiterRes(err)) {
+      return { success: false, remaining: 0 }
+    }
+    throw err
   }
-
-  const record = store[key]
-
-  if (now > record.resetTime) {
-    record.count = 1
-    record.resetTime = now + windowMs
-    return { success: true, remaining: limit - 1 }
-  }
-
-  record.count++
-
-  if (record.count > limit) {
-    return { success: false, remaining: 0 }
-  }
-
-  return { success: true, remaining: limit - record.count }
 }
 
 export function getRateLimitHeaders(remaining: number, limit: number) {

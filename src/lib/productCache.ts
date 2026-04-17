@@ -146,6 +146,27 @@ function parseCategories(value: string): string[] {
   return value.split(',').map(c => c.trim()).filter(Boolean)
 }
 
+function toListItem(p: CachedProductFull): CachedProductListItem {
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    shortDescription: p.shortDescription,
+    featured: p.featured,
+    active: p.active,
+    category: {
+      name: p.category.name,
+      slug: p.category.slug,
+    },
+    categories: p.categories.map(c => ({ name: c.name, slug: c.slug })),
+    variants: p.variants.map(v => ({
+      id: v.id,
+      name: v.name,
+      price: v.price,
+    })),
+  }
+}
+
 async function fetchFromSheet(): Promise<CachedProductFull[]> {
   const sheets = await getUncachableGoogleSheetClient()
 
@@ -181,24 +202,24 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
   }
 
   const normalizedProducts = productRows.slice(1).map((row: string[]) => {
-    const obj: any = {}
+    const obj: Record<string, string> = {}
     productRows[0].forEach((header: string, index: number) => {
       const normalizedKey = header.trim().toLowerCase()
       const mappedKey = headerMap[normalizedKey] || normalizedKey
       obj[mappedKey] = row[index] || ''
     })
-    return obj as SheetProduct
+    return obj as unknown as SheetProduct
   })
 
   const normalizedVariants = variantRows.length >= 2
     ? variantRows.slice(1).map((row: string[]) => {
-        const obj: any = {}
+        const obj: Record<string, string> = {}
         variantRows[0].forEach((header: string, index: number) => {
           const normalizedKey = header.trim().toLowerCase()
           const mappedKey = VARIANT_HEADER_MAP[normalizedKey] || normalizedKey
           obj[mappedKey] = row[index] || ''
         })
-        return obj as SheetVariant
+        return obj as unknown as SheetVariant
       })
     : []
 
@@ -332,24 +353,7 @@ export async function getCachedProducts(options?: {
     })
   }
 
-  return filtered.map(p => ({
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    shortDescription: p.shortDescription,
-    featured: p.featured,
-    active: p.active,
-    category: {
-      name: p.category.name,
-      slug: p.category.slug,
-    },
-    categories: p.categories.map(c => ({ name: c.name, slug: c.slug })),
-    variants: p.variants.map(v => ({
-      id: v.id,
-      name: v.name,
-      price: v.price,
-    })),
-  }))
+  return filtered.map(toListItem)
 }
 
 export async function getCachedFeaturedProducts(): Promise<CachedProductListItem[]> {
@@ -358,24 +362,7 @@ export async function getCachedFeaturedProducts(): Promise<CachedProductListItem
   return allProducts
     .filter(p => p.featured && p.active && p.variants.length > 0)
     .slice(0, 6)
-    .map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      shortDescription: p.shortDescription,
-      featured: p.featured,
-      active: p.active,
-      category: {
-        name: p.category.name,
-        slug: p.category.slug,
-      },
-      categories: p.categories.map(c => ({ name: c.name, slug: c.slug })),
-      variants: p.variants.map(v => ({
-        id: v.id,
-        name: v.name,
-        price: v.price,
-      })),
-    }))
+    .map(toListItem)
 }
 
 export async function getCachedProductBySlug(slug: string): Promise<CachedProductFull | null> {
@@ -397,24 +384,7 @@ export async function getCachedRelatedProducts(
       p.categories.some(c => categorySlugs.includes(c.slug))
     )
     .slice(0, 4)
-    .map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      shortDescription: p.shortDescription,
-      featured: p.featured,
-      active: p.active,
-      category: {
-        name: p.category.name,
-        slug: p.category.slug,
-      },
-      categories: p.categories.map(c => ({ name: c.name, slug: c.slug })),
-      variants: p.variants.map(v => ({
-        id: v.id,
-        name: v.name,
-        price: v.price,
-      })),
-    }))
+    .map(toListItem)
 }
 
 export interface StockCheckItem {
@@ -449,7 +419,7 @@ export async function checkStock(items: StockCheckItem[]): Promise<StockCheckRes
   const headers = rows[0].map((h: string) => h.trim().toLowerCase())
 
   const variants = rows.slice(1).map((row: string[]) => {
-    const obj: any = {}
+    const obj: Record<string, string> = {}
     headers.forEach((header: string, index: number) => {
       const mapped = VARIANT_HEADER_MAP[header] || header
       obj[mapped] = row[index] || ''
@@ -461,7 +431,7 @@ export async function checkStock(items: StockCheckItem[]): Promise<StockCheckRes
 
   for (const item of items) {
     const itemSlug = slugify(item.slug)
-    const variant = variants.find((v: any) =>
+    const variant = variants.find((v: Record<string, string>) =>
       slugify(v.productSlug || '') === itemSlug &&
       v.variantName?.trim().toLowerCase() === item.variantName.toLowerCase()
     )

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { authSession } from "@/lib/auth-session"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit"
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const rateLimitResult = rateLimit(request, 50, 60000)
+  const rateLimitResult = await rateLimit(request, 50, 60000)
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },
@@ -177,8 +178,7 @@ export async function POST(request: NextRequest) {
         orderNumber = createdOrder.orderNumber
         break
       } catch (dbError: unknown) {
-        const isPrismaError = typeof dbError === "object" && dbError !== null && "code" in dbError
-        const isUniqueViolation = isPrismaError && (dbError as { code: string }).code === "P2002"
+        const isUniqueViolation = dbError instanceof Prisma.PrismaClientKnownRequestError && dbError.code === "P2002"
         if (isUniqueViolation && attempt < MAX_ORDER_RETRIES - 1) {
           continue
         }

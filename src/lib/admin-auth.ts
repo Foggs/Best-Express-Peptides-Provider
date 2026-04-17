@@ -4,7 +4,7 @@ import { getJwtSecret } from "@/lib/jwt"
 
 export { getJwtSecret } from "@/lib/jwt"
 
-export async function verifyAdminAuth(request: NextRequest) {
+export function verifyAdminAuth(request: NextRequest) {
   const authHeader = request.headers.get("authorization")
   if (!authHeader?.startsWith("Bearer ")) {
     return { valid: false, user: null }
