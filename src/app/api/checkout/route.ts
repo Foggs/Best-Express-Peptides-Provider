@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit"
 import { checkStock, decrementStock, getCachedProductBySlug } from "@/lib/productCache"
+import { validateCoupon } from "@/lib/coupon"
 
 const ORDER_NUMBER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -121,7 +122,24 @@ export async function POST(request: NextRequest) {
 
     const subtotal = verifiedItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
     const shipping = 0
-    const discount = coupon ? coupon.discount : 0
+
+    // Re-validate the coupon server-side using only the coupon CODE from the client.
+    // The discount amount from the client body is intentionally ignored — it is never trusted.
+    let discount = 0
+    let verifiedCouponCode: string | null = null
+
+    if (coupon?.code) {
+      const couponResult = await validateCoupon(coupon.code, subtotal)
+      if (couponResult.valid) {
+        discount = couponResult.discount
+        verifiedCouponCode = couponResult.couponCode
+      } else {
+        // Coupon was valid at cart time but is now invalid (expired, deactivated, etc.)
+        // Proceed without the discount rather than blocking the order.
+        console.warn(`Coupon '${coupon.code}' invalid at checkout: ${couponResult.message}`)
+      }
+    }
+
     const total = subtotal + shipping - discount
 
     let userId: string | null = null
@@ -151,7 +169,7 @@ export async function POST(request: NextRequest) {
             discount,
             tax: 0,
             total,
-            couponCode: coupon?.code || null,
+            couponCode: verifiedCouponCode,
             shippingAddress: shippingAddress,
             items: {
               create: verifiedItems.map((item) => ({
@@ -219,7 +237,7 @@ export async function POST(request: NextRequest) {
         shipping,
         discount,
         total,
-        couponCode: coupon?.code,
+        couponCode: verifiedCouponCode ?? undefined,
         orderNumber,
       })
     } catch (importError) {

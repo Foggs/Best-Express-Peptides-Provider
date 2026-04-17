@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { validateCoupon } from "@/lib/coupon"
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -27,76 +27,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find the coupon
-    const coupon = await prisma.coupon.findUnique({
-      where: { code: code.toUpperCase() },
-    })
+    const result = await validateCoupon(code, subtotal)
 
-    if (!coupon) {
-      return NextResponse.json(
-        { message: "Coupon code not found" },
-        { status: 404 }
-      )
+    if (!result.valid) {
+      const status = result.message === "Coupon code not found" ? 404 : 400
+      return NextResponse.json({ message: result.message }, { status })
     }
 
-    // Check if coupon is active
-    if (!coupon.isActive) {
-      return NextResponse.json(
-        { message: "This coupon code is no longer active" },
-        { status: 400 }
-      )
-    }
-
-    // Check if coupon has expired
-    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
-      return NextResponse.json(
-        { message: "This coupon code has expired" },
-        { status: 400 }
-      )
-    }
-
-    // Check usage limits
-    if (coupon.maxUses && coupon.timesUsed >= coupon.maxUses) {
-      return NextResponse.json(
-        { message: "This coupon code has reached its usage limit" },
-        { status: 400 }
-      )
-    }
-
-    // Check minimum order amount
-    if (subtotal < coupon.minOrderAmount) {
-      return NextResponse.json(
-        {
-          message: `This coupon requires a minimum order of $${(coupon.minOrderAmount / 100).toFixed(2)}`,
-        },
-        { status: 400 }
-      )
-    }
-
-    // Calculate discount
-    let discount = 0
-    if (coupon.discountType === "percentage") {
-      discount = Math.floor((subtotal * coupon.discountValue) / 100)
-    } else if (coupon.discountType === "fixed") {
-      discount = coupon.discountValue
-    }
-
-    // Ensure discount doesn't exceed subtotal
-    if (discount > subtotal) {
-      discount = subtotal
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        couponCode: coupon.code,
-        discountType: coupon.discountType,
-        discountValue: coupon.discountValue,
-        discount: discount,
-        message: `Coupon applied! You saved $${(discount / 100).toFixed(2)}`,
-      },
-      { status: 200 }
-    )
+    return NextResponse.json(result, { status: 200 })
   } catch (error) {
     console.error("Coupon validation error:", error)
     return NextResponse.json(
