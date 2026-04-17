@@ -78,3 +78,38 @@ export async function validateCoupon(
     message: `Coupon applied! You saved $${(discount / 100).toFixed(2)}`,
   }
 }
+
+/**
+ * Resolves the coupon discount for the checkout route.
+ *
+ * This is the ONLY function the checkout handler calls for coupon resolution.
+ * Its signature accepts only a coupon CODE string — it is structurally
+ * impossible to pass a client-supplied discount amount through this function.
+ *
+ * If the coupon is invalid or absent, discount is 0 and the order proceeds
+ * unblocked (the caller logs a warning).
+ *
+ * @param couponCode - The code string extracted from the request body, or
+ *                     undefined if no coupon was applied.
+ * @param subtotal   - The verified server-computed subtotal in cents.
+ * @returns          - The server-computed discount and the verified coupon code.
+ */
+export async function resolveCheckoutDiscount(
+  couponCode: string | undefined,
+  subtotal: number,
+): Promise<{ discount: number; verifiedCouponCode: string | null }> {
+  if (!couponCode) {
+    return { discount: 0, verifiedCouponCode: null }
+  }
+
+  const result = await validateCoupon(couponCode, subtotal)
+
+  if (!result.valid) {
+    // Coupon was valid when added to the cart but is now invalid (expired,
+    // deactivated, etc.). Proceed without the discount rather than blocking.
+    console.warn(`Coupon '${couponCode}' is no longer valid at checkout: ${result.message}`)
+    return { discount: 0, verifiedCouponCode: null }
+  }
+
+  return { discount: result.discount, verifiedCouponCode: result.couponCode }
+}

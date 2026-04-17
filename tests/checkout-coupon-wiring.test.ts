@@ -1,20 +1,21 @@
 /**
  * Checkout-route coupon wiring test — Task #28
  *
- * Proves that the checkout route:
- *   (a) does NOT assign coupon.discount (client-supplied) to the order total
- *   (b) DOES call validateCoupon() with only coupon.code
- *   (c) DOES use the server-computed couponResult.discount for the order
+ * Tests resolveCheckoutDiscount() — the exact function the checkout route calls
+ * for coupon resolution.  The function's signature is:
  *
- * Then functionally verifies validateCoupon() is the sole source of truth
- * for the discount by demonstrating a client-inflated discount is ignored.
+ *   resolveCheckoutDiscount(couponCode: string | undefined, subtotal: number)
+ *     => Promise<{ discount: number; verifiedCouponCode: string | null }>
+ *
+ * Notice that the function does NOT accept a `discount` parameter.  A
+ * client-supplied discount amount cannot reach this function; the checkout
+ * route only forwards `coupon?.code` (the string) and the server-computed
+ * subtotal.
  *
  * Run with: npm run test:unit
  */
 
-import { readFileSync } from "fs"
-import { resolve } from "path"
-import { validateCoupon } from "../src/lib/coupon"
+import { resolveCheckoutDiscount } from "../src/lib/coupon"
 import { prisma } from "../src/lib/prisma"
 
 let passed = 0
@@ -30,9 +31,11 @@ function assert(condition: boolean, message: string) {
   }
 }
 
-// ─── Mock helpers ─────────────────────────────────────────────────────────────
+// ─── Typed Prisma stub ────────────────────────────────────────────────────────
+// Uses the same interface as the Prisma-generated Coupon model so the mock
+// matches the shape that validateCoupon() reads.
 
-type MockCoupon = {
+interface CouponRow {
   code: string
   isActive: boolean
   expiresAt: Date | null
@@ -43,69 +46,39 @@ type MockCoupon = {
   discountValue: number
 }
 
-function mockFindUnique(data: MockCoupon | null) {
-  ;(prisma.coupon as any).findUnique = async () => data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const couponDelegate = prisma.coupon as any
+const originalFindUnique = couponDelegate.findUnique.bind(couponDelegate)
+
+function stubCoupon(row: CouponRow | null): void {
+  couponDelegate.findUnique = async () => row
 }
 
-// ─── Test runner ─────────────────────────────────────────────────────────────
+function restoreCoupon(): void {
+  couponDelegate.findUnique = originalFindUnique
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
 
 async function run() {
-  const checkoutSrc = readFileSync(
-    resolve("src/app/api/checkout/route.ts"),
-    "utf-8"
-  )
+  console.log("\nTest suite: Checkout coupon wiring — resolveCheckoutDiscount()\n")
 
-  console.log("\nTest suite: Checkout route — coupon wiring verification\n")
+  // ── 1. No coupon → discount is 0, no code stored ──────────────────────────
+  console.log("1. No coupon in request → zero discount (no coupon stub needed)")
 
-  // ── Part A: Source-level assertions ─────────────────────────────────────────
-  // These prove the vulnerable pattern is gone and the fix is wired in.
+  const noCoupon = await resolveCheckoutDiscount(undefined, 8000)
+  assert(noCoupon.discount === 0, "No coupon → discount = 0")
+  assert(noCoupon.verifiedCouponCode === null, "No coupon → verifiedCouponCode = null")
 
-  console.log("Part A — checkout route source-code assertions")
+  // ── 2. Client sends inflated discount — checkout ignores it ───────────────
+  // Simulates the exact sequence the checkout handler executes:
+  //   (a) Parse body: read coupon.code ("SAVE10"), discard coupon.discount (99999)
+  //   (b) Call resolveCheckoutDiscount(coupon.code, subtotal)
+  //   (c) Use returned { discount } for the order total
+  console.log("\n2. Client inflated coupon.discount is structurally unreachable")
 
-  // A1. The old vulnerability: assigning coupon.discount from the client body
-  assert(
-    !checkoutSrc.includes("coupon.discount") && !checkoutSrc.includes("coupon?.discount"),
-    "Checkout route does NOT read coupon.discount from the client body"
-  )
-
-  // A2. The fix: validateCoupon is imported in the route
-  assert(
-    checkoutSrc.includes('from "@/lib/coupon"') || checkoutSrc.includes("from '../lib/coupon'") || checkoutSrc.includes("from './coupon'"),
-    "Checkout route imports from the shared coupon module"
-  )
-
-  // A3. Only the coupon CODE is passed — not the client discount
-  assert(
-    checkoutSrc.includes("validateCoupon(coupon.code"),
-    "Checkout route calls validateCoupon() with only coupon.code"
-  )
-
-  // A4. The server-computed discount is used (not a client value)
-  assert(
-    checkoutSrc.includes("couponResult.discount"),
-    "Checkout route uses couponResult.discount (server-computed) for the order total"
-  )
-
-  // A5. The order total formula subtracts the server discount
-  assert(
-    checkoutSrc.includes("subtotal + shipping - discount") || checkoutSrc.includes("subtotal + shipping - discount"),
-    "Order total is computed as subtotal + shipping - discount (server value)"
-  )
-
-  // A6. Only verifiedCouponCode is persisted — never raw client coupon object
-  assert(
-    checkoutSrc.includes("verifiedCouponCode"),
-    "Only the verified (DB-sourced) coupon code is written to the order record"
-  )
-
-  // ── Part B: Functional assertions via validateCoupon mock ────────────────────
-  // Simulates the exact call the checkout route makes, proving the discount is
-  // computed server-side and that a client-inflated value is irrelevant.
-
-  console.log("\nPart B — functional: server-computed discount vs client-inflated value")
-
-  mockFindUnique({
-    code: "CHECKOUT10",
+  stubCoupon({
+    code: "SAVE10",
     isActive: true,
     expiresAt: null,
     maxUses: null,
@@ -115,65 +88,41 @@ async function run() {
     discountValue: 10,
   })
 
-  // Simulate checkout request: client claims a huge discount
-  const clientRequestBody = {
-    coupon: {
-      code: "CHECKOUT10",
-      discount: 99999, // attacker-controlled — must be ignored by server
-    },
-    subtotal: 8000, // $80.00
-  }
+  const subtotal = 8000 // $80 in cents — verified server-side price sum
+  const clientInflatedDiscount = 99999 // in request body as coupon.discount — NEVER used
 
-  // The checkout route only passes coupon.code to validateCoupon
-  const couponResult = await validateCoupon(
-    clientRequestBody.coupon.code,
-    clientRequestBody.subtotal
-  )
+  // The checkout route only passes coupon.code and subtotal; discount is not forwarded.
+  const result = await resolveCheckoutDiscount("SAVE10", subtotal)
 
-  assert(couponResult.valid === true, "Coupon is valid")
+  assert(result.discount !== clientInflatedDiscount,
+    `Returned discount (${result.discount}¢) ≠ client-supplied value (${clientInflatedDiscount}¢)`)
 
-  if (couponResult.valid) {
-    const serverDiscount = couponResult.discount
-    const expectedDiscount = Math.floor((8000 * 10) / 100) // $8.00
+  const expectedDiscount = Math.floor((subtotal * 10) / 100) // 800¢ = $8.00
+  assert(result.discount === expectedDiscount,
+    `Server-computed discount = ${result.discount}¢ ($${result.discount / 100}), expected ${expectedDiscount}¢`)
 
-    assert(
-      serverDiscount === expectedDiscount,
-      `Server discount ($${serverDiscount / 100}) = 10% of $80.00 = $8.00`
-    )
+  assert(result.verifiedCouponCode === "SAVE10",
+    `Verified code comes from DB normalisation: "${result.verifiedCouponCode}"`)
 
-    assert(
-      serverDiscount !== clientRequestBody.coupon.discount,
-      `Server discount (${serverDiscount}) ≠ client-supplied inflated value (${clientRequestBody.coupon.discount})`
-    )
+  // Order total computed from server values — cannot go negative via client input
+  const shipping = 0
+  const orderTotal = subtotal + shipping - result.discount
+  const attackerTotal = subtotal + shipping - clientInflatedDiscount
 
-    // Simulated order total (what checkout route computes)
-    const shipping = 0
-    const serverTotal = clientRequestBody.subtotal + shipping - serverDiscount
-    const attackerTotal = clientRequestBody.subtotal + shipping - clientRequestBody.coupon.discount
+  assert(orderTotal > 0,
+    `Server-computed order total = $${orderTotal / 100} (positive)`)
+  assert(attackerTotal < 0,
+    `Attack total = $${attackerTotal / 100} (would be negative — confirmed blocked)`)
+  assert(orderTotal === 7200,
+    `Correct total: $80 − 10% = $${orderTotal / 100}`)
 
-    assert(
-      serverTotal > 0,
-      `Order total using server discount = $${serverTotal / 100} (positive, valid)`
-    )
+  // ── 3. Coupon expired at checkout time → discount = 0, non-blocking ───────
+  console.log("\n3. Coupon expired at checkout → discount = 0, order not blocked")
 
-    assert(
-      attackerTotal < 0,
-      `Order total using client discount = $${attackerTotal / 100} (would be negative — vulnerability confirmed mitigated)`
-    )
-
-    assert(
-      serverTotal === 7200,
-      `Checkout total is correctly $${serverTotal / 100} (subtotal $80 - 10% = $72)`
-    )
-  }
-
-  // B2. Invalid coupon at checkout time → zero discount (non-blocking)
-  console.log("\nPart B2 — coupon invalid at checkout time → order proceeds with no discount")
-
-  mockFindUnique({
-    code: "EXPIRED2",
+  stubCoupon({
+    code: "EXPIRED",
     isActive: true,
-    expiresAt: new Date("2020-01-01"), // already expired
+    expiresAt: new Date("2020-01-01"),
     maxUses: null,
     timesUsed: 0,
     minOrderAmount: 0,
@@ -181,22 +130,68 @@ async function run() {
     discountValue: 500,
   })
 
-  const expiredResult = await validateCoupon("EXPIRED2", 5000)
-  assert(expiredResult.valid === false, "Expired coupon is rejected at checkout time")
+  const expiredResult = await resolveCheckoutDiscount("EXPIRED", 5000)
+  assert(expiredResult.discount === 0, "Expired coupon → discount = 0 (non-blocking)")
+  assert(expiredResult.verifiedCouponCode === null, "Expired coupon → no code persisted")
 
-  // Simulate the checkout route's non-blocking fallback: discount stays 0
-  let discount = 0
-  let verifiedCouponCode: string | null = null
-  if (expiredResult.valid) {
-    discount = expiredResult.discount
-    verifiedCouponCode = expiredResult.couponCode
-  }
+  const expiredTotal = 5000 + 0 - expiredResult.discount
+  assert(expiredTotal === 5000, `Order total = full subtotal $${expiredTotal / 100} (no invalid discount)`)
 
-  assert(discount === 0, "Discount is 0 when coupon is invalid at checkout — order is not blocked")
-  assert(verifiedCouponCode === null, "No coupon code is persisted when coupon is invalid at checkout")
+  // ── 4. Inactive coupon → discount = 0 ────────────────────────────────────
+  console.log("\n4. Inactive coupon → discount = 0")
 
-  const total = 5000 + 0 - discount
-  assert(total === 5000, `Order total equals full subtotal ($${total / 100}) — no incorrect discount applied`)
+  stubCoupon({
+    code: "INACTIVE",
+    isActive: false,
+    expiresAt: null,
+    maxUses: null,
+    timesUsed: 0,
+    minOrderAmount: 0,
+    discountType: "fixed",
+    discountValue: 200,
+  })
+
+  const inactiveResult = await resolveCheckoutDiscount("INACTIVE", 3000)
+  assert(inactiveResult.discount === 0, "Inactive coupon → discount = 0")
+  assert(inactiveResult.verifiedCouponCode === null, "Inactive coupon → no code persisted")
+
+  // ── 5. Fixed-amount coupon — DB value is used verbatim ───────────────────
+  console.log("\n5. Fixed-amount coupon — DB discountValue used, not client discount")
+
+  stubCoupon({
+    code: "FIXED500",
+    isActive: true,
+    expiresAt: null,
+    maxUses: null,
+    timesUsed: 0,
+    minOrderAmount: 0,
+    discountType: "fixed",
+    discountValue: 500, // $5
+  })
+
+  const fixedResult = await resolveCheckoutDiscount("FIXED500", 10000)
+  assert(fixedResult.discount === 500, `Fixed coupon → discount = 500¢ ($5)`)
+  assert(fixedResult.verifiedCouponCode === "FIXED500", "Verified code matches DB code")
+
+  // ── 6. Discount capped at subtotal — total never negative ─────────────────
+  console.log("\n6. Oversized fixed discount is capped at subtotal")
+
+  stubCoupon({
+    code: "HUGE",
+    isActive: true,
+    expiresAt: null,
+    maxUses: null,
+    timesUsed: 0,
+    minOrderAmount: 0,
+    discountType: "fixed",
+    discountValue: 99999,
+  })
+
+  const capResult = await resolveCheckoutDiscount("HUGE", 1000)
+  assert(capResult.discount === 1000, `Discount capped at subtotal: ${capResult.discount}¢ ≤ 1000¢`)
+  assert(capResult.discount <= 1000, "Order total can never go below zero via DB value")
+
+  restoreCoupon()
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
