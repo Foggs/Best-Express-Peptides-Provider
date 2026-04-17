@@ -146,7 +146,7 @@ async function run() {
 
     clearCache()
     const products5 = await getCachedProducts()
-    const prices = products5[0].variants.map(v => v.price)
+    const prices = products5[0].variants.map((v: { price: number }) => v.price)
     assert(
       JSON.stringify(prices) === JSON.stringify([2500, 5000, 10000]),
       `variants sorted asc: [${prices}]`,

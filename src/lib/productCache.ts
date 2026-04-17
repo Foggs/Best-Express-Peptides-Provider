@@ -100,6 +100,17 @@ interface ProductCache {
 
 let cache: ProductCache | null = null
 
+const VARIANT_HEADER_MAP: Record<string, string> = {
+  'productslug': 'productSlug',
+  'product slug': 'productSlug',
+  'variantname': 'variantName',
+  'variant name': 'variantName',
+  'variant': 'variantName',
+  'price': 'price',
+  'sku': 'sku',
+  'stock': 'stock',
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -169,17 +180,6 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
     'active': 'active',
   }
 
-  const variantHeaderMap: Record<string, string> = {
-    'productslug': 'productSlug',
-    'product slug': 'productSlug',
-    'variantname': 'variantName',
-    'variant name': 'variantName',
-    'variant': 'variantName',
-    'price': 'price',
-    'sku': 'sku',
-    'stock': 'stock',
-  }
-
   const normalizedProducts = productRows.slice(1).map((row: string[]) => {
     const obj: any = {}
     productRows[0].forEach((header: string, index: number) => {
@@ -195,7 +195,7 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
         const obj: any = {}
         variantRows[0].forEach((header: string, index: number) => {
           const normalizedKey = header.trim().toLowerCase()
-          const mappedKey = variantHeaderMap[normalizedKey] || normalizedKey
+          const mappedKey = VARIANT_HEADER_MAP[normalizedKey] || normalizedKey
           obj[mappedKey] = row[index] || ''
         })
         return obj as SheetVariant
@@ -447,19 +447,11 @@ export async function checkStock(items: StockCheckItem[]): Promise<StockCheckRes
   }
 
   const headers = rows[0].map((h: string) => h.trim().toLowerCase())
-  const variantHeaderMapLocal: Record<string, string> = {
-    'productslug': 'productSlug',
-    'product slug': 'productSlug',
-    'variantname': 'variantName',
-    'variant name': 'variantName',
-    'variant': 'variantName',
-    'stock': 'stock',
-  }
 
   const variants = rows.slice(1).map((row: string[]) => {
     const obj: any = {}
     headers.forEach((header: string, index: number) => {
-      const mapped = variantHeaderMapLocal[header] || header
+      const mapped = VARIANT_HEADER_MAP[header] || header
       obj[mapped] = row[index] || ''
     })
     return obj

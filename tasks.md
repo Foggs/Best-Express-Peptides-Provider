@@ -7,7 +7,7 @@ Generated from the final code audit. Work through tasks in order — one per ses
 - [x] **Task 1 · #27** — Fix hardcoded JWT fallback secret (`admin-auth.ts`, `login/route.ts`, `verify/route.ts`)
 - [x] **Task 2 · #28** — Re-validate coupon discount server-side at checkout (`checkout/route.ts`)
 - [x] **Task 3 · #29** — Remove dead row-parsing code in `fetchFromSheet()` (`productCache.ts`)
-- [ ] **Task 4 · #30** — Deduplicate `variantHeaderMap` constant (`productCache.ts`)
+- [x] **Task 4 · #30** — Deduplicate `variantHeaderMap` constant (`productCache.ts`)
 - [ ] **Task 5 · #31** — Extract `toListItem()` helper to eliminate copy-pasted mapping (`productCache.ts`)
 - [ ] **Task 6 · #32** — Replace `any` types with `Record<string, string>` in row-mapping loops (`productCache.ts`)
 - [ ] **Task 7 · #33** — Remove unnecessary `async` from `verifyAdminAuth` (`admin-auth.ts`)
