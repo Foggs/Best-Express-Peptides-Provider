@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { authSession } from "@/lib/auth-session"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit"
-import { checkStock, decrementStock, getCachedProductBySlug } from "@/lib/productCache"
+import { checkoutDeps } from "@/lib/checkout-deps"
 import { resolveCheckoutDiscount } from "@/lib/coupon"
 
 const ORDER_NUMBER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -15,7 +14,7 @@ function generateOrderNumber(): string {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await authSession.getCheckoutSession()
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
     }))
 
-    const stockCheck = await checkStock(stockItems)
+    const stockCheck = await checkoutDeps.checkStock(stockItems)
 
     if (!stockCheck.success) {
       const details = stockCheck.insufficientItems.map(item => {
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     const verifiedItems: { slug: string; variantName: string; quantity: number; price: number; productId: string; variantId: string; name: string }[] = []
     for (const item of items) {
-      const product = await getCachedProductBySlug(item.slug)
+      const product = await checkoutDeps.getCachedProductBySlug(item.slug)
       if (!product) {
         return NextResponse.json(
           { error: `Product not found: ${item.slug}` },
@@ -194,7 +193,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const decrementResult = await decrementStock(stockItems)
+    const decrementResult = await checkoutDeps.decrementStock(stockItems)
 
     if (!decrementResult.success) {
       console.error("Failed to decrement stock after order created, cancelling order:", decrementResult.error)
