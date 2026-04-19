@@ -154,3 +154,37 @@ enum OrderStatus {
   CANCELLED
   REFUNDED
 }
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProviderApplication {
+  id                      String            @id @default(cuid())
+  firstName               String
+  lastName                String
+  suffix                  String?
+  email                   String
+  phone                   String
+  companyName             String
+  businessType            String            @default("Provider")
+  website                 String
+  taxId                   String
+  npiNumber               String
+  npiOwnerMatch           Boolean
+  hasResellerLicense      String
+  resellerPermitNumber    String?
+  resellerCertificatePath String?
+  addressLine1            String
+  city                    String
+  state                   String
+  zipCode                 String
+  businessLicensePath     String?
+  referredBy              String
+  comments                String?           @db.Text
+  status                  ApplicationStatus @default(PENDING)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+}

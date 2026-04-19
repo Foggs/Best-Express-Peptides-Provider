@@ -169,6 +169,14 @@ export default function SignUpPage() {
                 Sign in
               </Link>
             </p>
+            <div className="border-t border-gray-100 pt-4 w-full text-center">
+              <p className="text-sm text-muted-foreground">
+                Healthcare provider or research institution?{" "}
+                <Link href="/provider-intake" className="text-primary hover:underline font-medium">
+                  Apply as a Provider
+                </Link>
+              </p>
+            </div>
           </CardFooter>
         </Card>
       </div>
