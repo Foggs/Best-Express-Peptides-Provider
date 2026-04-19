@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
   const fields: Record<string, string> = {}
   for (const [key, value] of formData.entries()) {
-    if (typeof value === "string") fields[key] = value
+    if (typeof value === "string") fields[key] = value.trim()
   }
 
   const parsed = schema.safeParse(fields)
