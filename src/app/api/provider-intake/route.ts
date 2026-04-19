@@ -40,27 +40,35 @@ export const providerIntakeDeps = {
     prisma.providerApplication.create({ data }),
 }
 
+function req(msg: string) {
+  return { required_error: msg, invalid_type_error: msg }
+}
+
 const schema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  suffix: z.string().optional(),
-  email: z.string().email("A valid email address is required"),
-  phone: z.string().min(7, "A valid phone number is required"),
-  companyName: z.string().min(1, "Company name is required"),
-  website: z.string().min(1, "Website is required"),
-  taxId: z.string().min(1, "Tax ID / EIN is required"),
-  npiNumber: z.string().min(1, "NPI Number is required"),
-  npiOwnerMatch: z.enum(["true", "false"], { message: "Please select Yes or No for NPI owner" }),
+  firstName:   z.string(req("First name is required")).min(1, "First name is required"),
+  lastName:    z.string(req("Last name is required")).min(1, "Last name is required"),
+  suffix:      z.string().optional(),
+  email:       z.string(req("Email is required")).email("A valid email address is required"),
+  phone:       z.string(req("Phone is required")).min(7, "A valid phone number is required"),
+  companyName: z.string(req("Company name is required")).min(1, "Company name is required"),
+  website:     z.string(req("Website is required")).min(1, "Website is required"),
+  taxId:       z.string(req("Tax ID / EIN is required")).min(1, "Tax ID / EIN is required"),
+  npiNumber:   z.string(req("NPI Number is required")).min(1, "NPI Number is required"),
+  npiOwnerMatch: z.enum(["true", "false"], {
+    required_error: "Please select Yes or No for NPI owner",
+    message: "Please select Yes or No for NPI owner",
+  }),
   hasResellerLicense: z.enum(["YES", "NO", "NOT_SURE"], {
+    required_error: "Please select your reseller license status",
     message: "Please select your reseller license status",
   }),
   resellerPermitNumber: z.string().optional(),
-  addressLine1: z.string().min(1, "Address is required"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  zipCode: z.string().min(5, "A valid zip code is required"),
-  referredBy: z.string().min(1, "Referral information is required"),
-  comments: z.string().optional(),
+  addressLine1: z.string(req("Address is required")).min(1, "Address is required"),
+  city:         z.string(req("City is required")).min(1, "City is required"),
+  state:        z.string(req("State is required")).min(1, "State is required"),
+  zipCode:      z.string(req("A valid zip code is required")).min(5, "A valid zip code is required"),
+  referredBy:   z.string(req("Referral information is required")).min(1, "Referral information is required"),
+  comments:     z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -110,7 +118,12 @@ export async function POST(request: NextRequest) {
 
   const certFile = formData.get("resellerCertificate") as File | null
   if (certFile && certFile.size > 0) {
-    resellerCertificatePath = await providerIntakeDeps.saveFile(certFile)
+    try {
+      resellerCertificatePath = await providerIntakeDeps.saveFile(certFile)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Invalid certificate file"
+      return NextResponse.json({ error: msg, field: "resellerCertificate" }, { status: 400 })
+    }
   } else if (data.hasResellerLicense === "YES") {
     return NextResponse.json(
       {
@@ -123,7 +136,12 @@ export async function POST(request: NextRequest) {
 
   const licenseFile = formData.get("businessLicense") as File | null
   if (licenseFile && licenseFile.size > 0) {
-    businessLicensePath = await providerIntakeDeps.saveFile(licenseFile)
+    try {
+      businessLicensePath = await providerIntakeDeps.saveFile(licenseFile)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Invalid license file"
+      return NextResponse.json({ error: msg, field: "businessLicense" }, { status: 400 })
+    }
   }
 
   try {

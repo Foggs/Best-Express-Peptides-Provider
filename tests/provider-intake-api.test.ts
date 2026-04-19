@@ -88,15 +88,15 @@ async function run() {
   assert(r1.status === 201, `status 201 (got ${r1.status})`)
   assert(j1.success === true, `body.success = true`)
 
-  // ── 2. Missing required field → 400 ─────────────────────────────────────
-  console.log("\n2. Missing required field (firstName) → 400")
+  // ── 2. Missing required field → 400 with descriptive message ───────────
+  console.log("\n2. Missing required field (firstName) → 400 with descriptive message")
   setupStubs()
 
   const r2 = await POST(makeReq(makeFormData({ firstName: null })))
   const j2 = await r2.json()
 
   assert(r2.status === 400, `status 400 (got ${r2.status})`)
-  assert(typeof j2.error === "string", `error message present: "${j2.error}"`)
+  assert(j2.error === "First name is required", `error = "First name is required" (got "${j2.error}")`)
   assert(j2.field === "firstName", `field = "firstName" (got "${j2.field}")`)
 
   // ── 3. Invalid email → 400 ──────────────────────────────────────────────
@@ -199,6 +199,54 @@ async function run() {
 
   assert(r12.status === 400, `status 400 (got ${r12.status})`)
   assert(j12.field === "referredBy", `field = "referredBy" (got "${j12.field}")`)
+
+  // ── 13. Invalid file extension in certificate → 400 ─────────────────────
+  console.log("\n13. Invalid file extension in certificate (saveFile throws) → 400")
+  setupStubs({
+    saveFileThrows: true,
+    saveFileResult: "saved.pdf",
+  })
+  // Override saveFile to throw an extension-specific error
+  providerIntakeDeps.saveFile = async (_file: File) => {
+    throw new Error('File type ".exe" is not allowed. Accepted: pdf, jpg, jpeg, png.')
+  }
+
+  // Need a cert file present so the route attempts saveFile
+  const fd13 = makeFormData({ hasResellerLicense: "YES", resellerPermitNumber: "PERMIT-99" })
+  fd13.append("resellerCertificate", new File(["data"], "malware.exe", { type: "application/octet-stream" }))
+
+  const r13 = await POST(makeReq(fd13))
+  const j13 = await r13.json()
+
+  assert(r13.status === 400, `status 400 (got ${r13.status})`)
+  assert(j13.field === "resellerCertificate", `field = "resellerCertificate" (got "${j13.field}")`)
+  assert(typeof j13.error === "string" && j13.error.includes("not allowed"), `error mentions "not allowed": "${j13.error}"`)
+
+  // ── 14. File too large → 400 ─────────────────────────────────────────────
+  console.log("\n14. File exceeding size limit (saveFile throws) → 400")
+  providerIntakeDeps.saveFile = async (_file: File) => {
+    throw new Error("File exceeds the 10 MB limit.")
+  }
+
+  const fd14 = makeFormData({ hasResellerLicense: "YES", resellerPermitNumber: "PERMIT-99" })
+  fd14.append("resellerCertificate", new File(["data"], "toobig.pdf", { type: "application/pdf" }))
+
+  const r14 = await POST(makeReq(fd14))
+  const j14 = await r14.json()
+
+  assert(r14.status === 400, `status 400 (got ${r14.status})`)
+  assert(j14.field === "resellerCertificate", `field = "resellerCertificate" (got "${j14.field}")`)
+  assert(typeof j14.error === "string" && j14.error.includes("10 MB"), `error mentions "10 MB": "${j14.error}"`)
+
+  // ── 15. Missing state → descriptive message ──────────────────────────────
+  console.log("\n15. Missing state → descriptive error message")
+  setupStubs()
+
+  const r15 = await POST(makeReq(makeFormData({ state: null })))
+  const j15 = await r15.json()
+
+  assert(r15.status === 400, `status 400 (got ${r15.status})`)
+  assert(j15.error === "State is required", `error = "State is required" (got "${j15.error}")`)
 }
 
 run()
