@@ -436,60 +436,58 @@ export default function ProviderIntakePage() {
               </div>
             </div>
 
-            {/* Reseller license + Permit number */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-1">
-              <div>
-                <Label className="block mb-2">
-                  Does your business have a reseller&apos;s license?
-                  <span className="text-red-500 ml-0.5">*</span>
-                </Label>
-                <div className="flex gap-4">
-                  {(["YES", "NO", "NOT_SURE"] as const).map((val) => (
-                    <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <input
-                        type="radio"
-                        name="hasResellerLicense"
-                        value={val}
-                        checked={hasResellerLicense === val}
-                        onChange={() => setHasResellerLicense(val)}
-                        className="accent-blue-600"
-                      />
-                      {val === "YES" ? "Yes" : val === "NO" ? "No" : "Not sure"}
-                    </label>
-                  ))}
-                </div>
-                <FieldError msg={errors.hasResellerLicense} />
+            {/* Reseller license question */}
+            <div className="mb-1">
+              <Label className="block mb-2">
+                Does your business have a reseller&apos;s license?
+                <span className="text-red-500 ml-0.5">*</span>
+              </Label>
+              <div className="flex gap-4">
+                {(["YES", "NO", "NOT_SURE"] as const).map((val) => (
+                  <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="hasResellerLicense"
+                      value={val}
+                      checked={hasResellerLicense === val}
+                      onChange={() => setHasResellerLicense(val)}
+                      className="accent-blue-600"
+                    />
+                    {val === "YES" ? "Yes" : val === "NO" ? "No" : "Not sure"}
+                  </label>
+                ))}
               </div>
-              <div>
-                <Label htmlFor="resellerPermitNumber">
-                  Reseller&apos;s Permit Number
-                  {showResellerFields && <span className="text-red-500 ml-0.5">*</span>}
-                </Label>
-                <Input
-                  id="resellerPermitNumber"
-                  value={resellerPermitNumber}
-                  onChange={(e) => setResellerPermitNumber(e.target.value)}
-                  disabled={!showResellerFields}
-                  className={errors.resellerPermitNumber ? "border-red-400" : ""}
-                />
-                <FieldError msg={errors.resellerPermitNumber} />
-              </div>
+              <FieldError msg={errors.hasResellerLicense} />
             </div>
             <p className="text-xs text-gray-500 mb-4">
               Helps determine your eligibility for sales tax exemption.
             </p>
 
-            {/* Reseller certificate — conditional */}
+            {/* Reseller permit + certificate — only visible when YES */}
             {showResellerFields && (
-              <FileUploadInput
-                id="resellerCertificate"
-                label="Upload Reseller's Certificate"
-                required
-                fileRef={certRef}
-                fileName={certFileName}
-                onChange={setCertFileName}
-                error={errors.resellerCertificate}
-              />
+              <>
+                <div className="mb-4">
+                  <Label htmlFor="resellerPermitNumber">
+                    Reseller&apos;s Permit Number<span className="text-red-500 ml-0.5">*</span>
+                  </Label>
+                  <Input
+                    id="resellerPermitNumber"
+                    value={resellerPermitNumber}
+                    onChange={(e) => setResellerPermitNumber(e.target.value)}
+                    className={errors.resellerPermitNumber ? "border-red-400" : ""}
+                  />
+                  <FieldError msg={errors.resellerPermitNumber} />
+                </div>
+                <FileUploadInput
+                  id="resellerCertificate"
+                  label="Upload Reseller's Certificate"
+                  required
+                  fileRef={certRef}
+                  fileName={certFileName}
+                  onChange={setCertFileName}
+                  error={errors.resellerCertificate}
+                />
+              </>
             )}
           </div>
 
