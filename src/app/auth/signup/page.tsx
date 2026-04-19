@@ -1,185 +1,582 @@
 "use client"
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { FlaskConical, Loader2, UserPlus } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { CheckCircle, Upload } from "lucide-react"
+
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC",
+]
+
+const SUFFIXES = ["Jr.", "Sr.", "II", "III", "IV", "MD", "DO", "PhD", "NP", "PA"]
+
+interface FieldErrors {
+  [key: string]: string
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">
+      {children}
+    </h2>
+  )
+}
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null
+  return <p className="text-red-600 text-xs mt-1">{msg}</p>
+}
+
+function FileUploadInput({
+  id,
+  label,
+  required,
+  accept,
+  fileRef,
+  fileName,
+  onChange,
+  error,
+}: {
+  id: string
+  label: string
+  required?: boolean
+  accept?: string
+  fileRef: React.RefObject<HTMLInputElement>
+  fileName: string
+  onChange: (name: string) => void
+  error?: string
+}) {
+  return (
+    <div>
+      <Label htmlFor={id} className="mb-2 block">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </Label>
+      <div
+        className={`flex items-center gap-3 border rounded-md px-3 py-2 bg-white ${error ? "border-red-400" : "border-gray-300"}`}
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileRef.current?.click()}
+          className="shrink-0"
+        >
+          <Upload className="h-3.5 w-3.5 mr-1.5" />
+          Upload
+        </Button>
+        <span className="text-sm text-gray-500">
+          {fileName || "or drag files here."}
+        </span>
+        <input
+          ref={fileRef}
+          id={id}
+          type="file"
+          accept={accept ?? ".pdf,.jpg,.jpeg,.png"}
+          className="hidden"
+          onChange={(e) => onChange(e.target.files?.[0]?.name ?? "")}
+        />
+      </div>
+      <FieldError msg={error} />
+    </div>
+  )
+}
 
 export default function SignUpPage() {
-  const router = useRouter()
-  const [name, setName] = useState("")
+  const [modalOpen, setModalOpen] = useState(false)
+  const [errors, setErrors] = useState<FieldErrors>({})
+
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [suffix, setSuffix] = useState("")
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [phone, setPhone] = useState("")
+  const [companyName, setCompanyName] = useState("")
+  const [website, setWebsite] = useState("")
+  const [taxId, setTaxId] = useState("")
+  const [npiNumber, setNpiNumber] = useState("")
+  const [npiOwnerMatch, setNpiOwnerMatch] = useState<"true" | "false" | "">("")
+  const [hasResellerLicense, setHasResellerLicense] = useState<"YES" | "NO" | "NOT_SURE" | "">("")
+  const [resellerPermitNumber, setResellerPermitNumber] = useState("")
+  const [addressLine1, setAddressLine1] = useState("")
+  const [city, setCity] = useState("")
+  const [state, setState] = useState("")
+  const [zipCode, setZipCode] = useState("")
+  const [referredBy, setReferredBy] = useState("")
+  const [comments, setComments] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+  const [certFileName, setCertFileName] = useState("")
+  const [licenseFileName, setLicenseFileName] = useState("")
+  const certRef = useRef<HTMLInputElement>(null!)
+  const licenseRef = useRef<HTMLInputElement>(null!)
 
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      })
+  const showResellerFields = hasResellerLicense === "YES"
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Registration failed")
-      }
-
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        setError("Error signing in after registration")
-      } else {
-        router.push("/")
-      }
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+  function validate(): boolean {
+    const e: FieldErrors = {}
+    if (!firstName.trim()) e.firstName = "First name is required"
+    if (!lastName.trim()) e.lastName = "Last name is required"
+    if (!email.trim()) e.email = "Email is required"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email address"
+    if (!phone.trim()) e.phone = "Phone is required"
+    if (!companyName.trim()) e.companyName = "Company name is required"
+    if (!website.trim()) e.website = "Website is required"
+    if (!taxId.trim()) e.taxId = "Tax ID / EIN is required"
+    if (!npiNumber.trim()) e.npiNumber = "NPI Number is required"
+    if (!npiOwnerMatch) e.npiOwnerMatch = "Please select Yes or No"
+    if (!hasResellerLicense) e.hasResellerLicense = "Please select your reseller license status"
+    if (hasResellerLicense === "YES") {
+      if (!resellerPermitNumber.trim()) e.resellerPermitNumber = "Permit number is required"
+      if (!certRef.current?.files?.[0]) e.resellerCertificate = "Certificate upload is required"
     }
+    if (!addressLine1.trim()) e.addressLine1 = "Address is required"
+    if (!city.trim()) e.city = "City is required"
+    if (!state) e.state = "State is required"
+    if (!zipCode.trim()) e.zipCode = "Zip code is required"
+    if (!referredBy.trim()) e.referredBy = "Referral information is required"
+    setErrors(e)
+    return Object.keys(e).length === 0
   }
 
-  const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/" })
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!validate()) {
+      document.querySelector("[data-error]")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
+    setModalOpen(true)
   }
 
   return (
-    <div className="py-16">
-      <div className="container-custom max-w-md">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <FlaskConical className="h-8 w-8 text-primary" />
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+
+        {/* Disclaimer */}
+        <div className="bg-white border border-gray-200 rounded-md p-4 mb-6 text-xs text-gray-600 leading-relaxed">
+          <span className="font-semibold text-blue-600">Disclaimer:</span>{" "}
+          This platform provides access exclusively to verified healthcare providers, research
+          institutions, and group purchasing organizations (GPOs) for institutional and laboratory
+          use. All product orders must originate from authorized accounts and are supplied strictly
+          for in-vitro research and analytical purposes. We do not sell directly to patients or
+          individual consumers, and all materials are distributed under research-use-only (RUO)
+          classification.
+        </div>
+
+        {/* Header */}
+        <div className="bg-white border border-gray-200 rounded-md p-6 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-0.5">
+              <span className="text-blue-600 font-black text-2xl tracking-tight">Alpha</span>
+              <div className="flex flex-col leading-none ml-0.5">
+                <div className="w-6 h-1.5 bg-blue-600 rounded-sm mb-0.5" />
+                <div className="w-6 h-1.5 bg-blue-400 rounded-sm" />
               </div>
             </div>
-            <CardTitle className="text-2xl">Create Account</CardTitle>
-            <CardDescription>Sign up for a BestExpressPeptides account</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignIn}
-            >
-              <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-              Continue with Google
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-              </div>
+            <div>
+              <div className="text-xs text-gray-500 font-medium -mb-1">BioMed</div>
             </div>
+            <h1 className="text-2xl font-bold text-gray-900 ml-2">Provider Intake</h1>
+          </div>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-md">
-                  {error}
-                </div>
-              )}
-              <div>
-                <Label htmlFor="name">Name</Label>
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
+
+          {/* ── Contact Information ─────────────────────────── */}
+          <div className="bg-white border border-gray-200 rounded-md p-6">
+            <SectionTitle>Contact Information</SectionTitle>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="sm:col-span-1">
+                <Label htmlFor="firstName">
+                  First Name<span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Input
-                  id="name"
-                  type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  id="firstName"
+                  placeholder="First"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={errors.firstName ? "border-red-400" : ""}
+                  data-error={errors.firstName ? true : undefined}
                 />
+                <FieldError msg={errors.firstName} />
               </div>
+              <div className="sm:col-span-1">
+                <Label htmlFor="lastName">
+                  Last Name<span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="lastName"
+                  placeholder="Last"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={errors.lastName ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.lastName} />
+              </div>
+              <div className="sm:col-span-1">
+                <Label htmlFor="suffix">Suffix</Label>
+                <Select value={suffix} onValueChange={setSuffix}>
+                  <SelectTrigger id="suffix">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUFFIXES.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">
+                  Email<span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
+                  className={errors.email ? "border-red-400" : ""}
                 />
+                <FieldError msg={errors.email} />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="phone">
+                  Phone<span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
+                  id="phone"
+                  type="tel"
+                  placeholder="US-based mobile number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className={errors.phone ? "border-red-400" : ""}
                 />
+                <FieldError msg={errors.phone} />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Create Account
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex-col gap-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Already have an account?{" "}
-              <Link href="/auth/signin" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-            <div className="border-t border-gray-100 pt-4 w-full text-center">
-              <p className="text-sm text-muted-foreground">
-                Healthcare provider or research institution?{" "}
-                <Link href="/provider-intake" className="text-primary hover:underline font-medium">
-                  Apply as a Provider
-                </Link>
-              </p>
             </div>
-          </CardFooter>
-        </Card>
+          </div>
+
+          {/* ── Business Profile ────────────────────────────── */}
+          <div className="bg-white border border-gray-200 rounded-md p-6">
+            <SectionTitle>Business Profile</SectionTitle>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <Label htmlFor="companyName">
+                  Company Name<span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="companyName"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className={errors.companyName ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.companyName} />
+              </div>
+              <div>
+                <Label>Business Type</Label>
+                <p className="text-sm text-gray-700 mt-2 font-medium">Provider</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <Label htmlFor="website">
+                  Website<span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="website"
+                  placeholder="https://"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  className={errors.website ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.website} />
+              </div>
+              <div>
+                <Label htmlFor="taxId">
+                  Tax ID / EIN<span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="taxId"
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value)}
+                  className={errors.taxId ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.taxId} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <Label htmlFor="npiNumber">
+                  NPI Number<span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="npiNumber"
+                  value={npiNumber}
+                  onChange={(e) => setNpiNumber(e.target.value)}
+                  className={errors.npiNumber ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.npiNumber} />
+              </div>
+              <div>
+                <Label className="block mb-2">
+                  Does the owner of the NPI number match the contact for this account?
+                  <span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <div className="flex gap-6">
+                  {(["true", "false"] as const).map((val) => (
+                    <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="npiOwnerMatch"
+                        value={val}
+                        checked={npiOwnerMatch === val}
+                        onChange={() => setNpiOwnerMatch(val)}
+                        className="accent-blue-600"
+                      />
+                      {val === "true" ? "Yes" : "No"}
+                    </label>
+                  ))}
+                </div>
+                <FieldError msg={errors.npiOwnerMatch} />
+              </div>
+            </div>
+
+            <div className="mb-1">
+              <Label className="block mb-2">
+                Does your business have a reseller&apos;s license?
+                <span className="text-red-500 ml-0.5">*</span>
+              </Label>
+              <div className="flex gap-4">
+                {(["YES", "NO", "NOT_SURE"] as const).map((val) => (
+                  <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="hasResellerLicense"
+                      value={val}
+                      checked={hasResellerLicense === val}
+                      onChange={() => setHasResellerLicense(val)}
+                      className="accent-blue-600"
+                    />
+                    {val === "YES" ? "Yes" : val === "NO" ? "No" : "Not sure"}
+                  </label>
+                ))}
+              </div>
+              <FieldError msg={errors.hasResellerLicense} />
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Helps determine your eligibility for sales tax exemption.
+            </p>
+
+            {showResellerFields && (
+              <>
+                <div className="mb-4">
+                  <Label htmlFor="resellerPermitNumber">
+                    Reseller&apos;s Permit Number<span className="text-red-500 ml-0.5">*</span>
+                  </Label>
+                  <Input
+                    id="resellerPermitNumber"
+                    value={resellerPermitNumber}
+                    onChange={(e) => setResellerPermitNumber(e.target.value)}
+                    className={errors.resellerPermitNumber ? "border-red-400" : ""}
+                  />
+                  <FieldError msg={errors.resellerPermitNumber} />
+                </div>
+                <FileUploadInput
+                  id="resellerCertificate"
+                  label="Upload Reseller's Certificate"
+                  required
+                  fileRef={certRef}
+                  fileName={certFileName}
+                  onChange={setCertFileName}
+                  error={errors.resellerCertificate}
+                />
+              </>
+            )}
+          </div>
+
+          {/* ── Business Address ────────────────────────────── */}
+          <div className="bg-white border border-gray-200 rounded-md p-6">
+            <SectionTitle>Business Address</SectionTitle>
+            <p className="text-sm text-gray-500 -mt-2 mb-4">
+              If not applicable, use your main operating address
+            </p>
+
+            <div className="mb-4">
+              <Label htmlFor="addressLine1">Address Line 1</Label>
+              <Input
+                id="addressLine1"
+                value={addressLine1}
+                onChange={(e) => setAddressLine1(e.target.value)}
+                className={errors.addressLine1 ? "border-red-400" : ""}
+              />
+              <FieldError msg={errors.addressLine1} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className={errors.city ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.city} />
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Select value={state} onValueChange={setState}>
+                  <SelectTrigger id="state" className={errors.state ? "border-red-400" : ""}>
+                    <SelectValue placeholder="State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {US_STATES.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError msg={errors.state} />
+              </div>
+              <div>
+                <Label htmlFor="zipCode">Zip Code</Label>
+                <Input
+                  id="zipCode"
+                  placeholder="Zip Code"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  maxLength={10}
+                  className={errors.zipCode ? "border-red-400" : ""}
+                />
+                <FieldError msg={errors.zipCode} />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">All fields are required</p>
+          </div>
+
+          {/* ── Verification & Referral ─────────────────────── */}
+          <div className="bg-white border border-gray-200 rounded-md p-6">
+            <SectionTitle>Verification &amp; Referral</SectionTitle>
+
+            <div className="mb-1">
+              <FileUploadInput
+                id="businessLicense"
+                label="Upload Proof of Business or Professional License"
+                fileRef={licenseRef}
+                fileName={licenseFileName}
+                onChange={setLicenseFileName}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mb-5">
+              <span className="font-medium">Optional at this stage.</span> Clinics may upload a
+              business permit; individual providers may upload a license or valid ID. Required later
+              to complete your application.
+            </p>
+
+            <div>
+              <Label htmlFor="referredBy">
+                Referred by someone? Let us know!<span className="text-red-500 ml-0.5">*</span>
+              </Label>
+              <Input
+                id="referredBy"
+                placeholder="Name or code of the person who referred you"
+                value={referredBy}
+                onChange={(e) => setReferredBy(e.target.value)}
+                className={errors.referredBy ? "border-red-400" : ""}
+              />
+              <FieldError msg={errors.referredBy} />
+            </div>
+          </div>
+
+          {/* ── Additional Notes ────────────────────────────── */}
+          <div className="bg-white border border-gray-200 rounded-md p-6">
+            <SectionTitle>Additional Notes</SectionTitle>
+            <div>
+              <Label htmlFor="comments">Comments</Label>
+              <textarea
+                id="comments"
+                rows={4}
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                className="w-full mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+            </div>
+          </div>
+
+          {/* ── Consent + Submit ────────────────────────────── */}
+          <div className="bg-white border border-gray-200 rounded-md p-6">
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              By registering, you consent to receive email and/or SMS notifications, alerts, and
+              occasional marketing communication. Message frequency varies. Message &amp; data rates
+              may apply. See our{" "}
+              <Link href="/terms" className="text-blue-600 hover:underline">
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-blue-600 hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+            >
+              Submit
+            </Button>
+          </div>
+
+        </form>
       </div>
+
+      {/* ── Form Submitted Modal ─────────────────────────────── */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogHeader className="items-center">
+            <CheckCircle className="h-12 w-12 text-green-500 mb-2" />
+            <DialogTitle className="text-xl">Form Submitted</DialogTitle>
+            <DialogDescription className="text-center">
+              Thank you for your application! Our team will review your information and reach out
+              within 2–3 business days.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <DialogClose asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
