@@ -185,23 +185,6 @@ export default function SignUpPage() {
           classification.
         </div>
 
-        {/* Header */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-0.5">
-              <span className="text-blue-600 font-black text-2xl tracking-tight">Alpha</span>
-              <div className="flex flex-col leading-none ml-0.5">
-                <div className="w-6 h-1.5 bg-blue-600 rounded-sm mb-0.5" />
-                <div className="w-6 h-1.5 bg-blue-400 rounded-sm" />
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500 font-medium -mb-1">BioMed</div>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 ml-2">Provider Intake</h1>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
 
           {/* ── Contact Information ─────────────────────────── */}
