@@ -33,10 +33,10 @@ export function Header() {
           <div className="flex items-center gap-8">
             <Link href="/" aria-label="BestExpressPeptides - Home">
               <Image
-                src="/images/public/bestRxExpress.png"
+                src="/images/bestRxExpress.png"
                 alt="BestRxExpressPeptides"
-                width={296}
-                height={40}
+                width={506}
+                height={77}
                 style={{ height: "2.5rem", width: "auto" }}
                 priority
               />
