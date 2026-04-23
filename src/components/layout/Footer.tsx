@@ -34,6 +34,7 @@ export function Footer() {
                 <li><Link href="/shipping" className="hover:text-primary transition-colors">Shipping Info</Link></li>
                 <li><Link href="/refund" className="hover:text-primary transition-colors">Refund Policy</Link></li>
                 <li><Link href="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
+                <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
               </ul>
             </nav>
 

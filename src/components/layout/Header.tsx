@@ -66,6 +66,12 @@ export function Header() {
               </div>
             )}
 
+            <Link href="/contact" className="hidden md:inline-flex">
+              <Button variant="ghost" size="sm">
+                Contact
+              </Button>
+            </Link>
+
             <Link href="/admin/login" aria-label="Admin">
               <Button variant="outline" size="sm">
                 <Shield size={16} className="mr-2" />
@@ -107,6 +113,9 @@ export function Header() {
         {mobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden py-4 border-t">
             <nav className="flex flex-col gap-4" aria-label="Mobile navigation">
+              <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                Contact
+              </Link>
               <Link href="/admin/login" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                 Admin
               </Link>
