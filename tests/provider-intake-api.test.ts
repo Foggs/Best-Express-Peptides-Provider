@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
-import { POST, providerIntakeDeps } from "../src/app/api/provider-intake/route"
+import { POST } from "../src/app/api/provider-intake/route"
+import { providerIntakeDeps } from "../src/app/api/provider-intake/deps"
 
 let passed = 0
 let failed = 0
