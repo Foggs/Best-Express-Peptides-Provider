@@ -4,8 +4,6 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Header } from "@/components/layout/Header"
-import { Footer } from "@/components/layout/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -82,116 +80,112 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header />
-      <main className="flex-1">
-        <div className="container-custom py-12">
-          <div className="mx-auto max-w-2xl">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Contact Us</h1>
-              <p className="mt-3 text-gray-600">
-                Have a question about our research peptides or need help with an order?
-                Send us a message and our team will get back to you.
-              </p>
-            </div>
-
-            {submitted ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Thank you for contacting us
-                  </h2>
-                  <p className="mt-2 text-gray-600">
-                    Your message has been delivered to our team. We&apos;ll respond as soon as possible.
-                  </p>
-                  <Button
-                    className="mt-6"
-                    variant="outline"
-                    onClick={() => setSubmitted(false)}
-                  >
-                    Send another message
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MailIcon size={20} className="text-primary" />
-                    Send us a message
-                  </CardTitle>
-                  <CardDescription>
-                    Required fields are marked with an asterisk (*).
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        autoComplete="name"
-                        aria-invalid={!!errors.name}
-                        {...register("name")}
-                      />
-                      {errors.name && (
-                        <p className="text-sm text-red-600" role="alert">
-                          {errors.name.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        autoComplete="email"
-                        aria-invalid={!!errors.email}
-                        {...register("email")}
-                      />
-                      {errors.email && (
-                        <p className="text-sm text-red-600" role="alert">
-                          {errors.email.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Message *</Label>
-                      <textarea
-                        id="message"
-                        rows={6}
-                        aria-invalid={!!errors.message}
-                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        {...register("message")}
-                      />
-                      {errors.message && (
-                        <p className="text-sm text-red-600" role="alert">
-                          {errors.message.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <Button type="submit" disabled={isSubmitting} className="w-full">
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        "Send message"
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+    <div className="bg-gray-50 py-12">
+      <div className="container-custom">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Contact Us</h1>
+            <p className="mt-3 text-gray-600">
+              Have a question about our research peptides or need help with an order?
+              Send us a message and our team will get back to you.
+            </p>
           </div>
+
+          {submitted ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-600" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Thank you for contacting us
+                </h2>
+                <p className="mt-2 text-gray-600">
+                  Your message has been delivered to our team. We&apos;ll respond as soon as possible.
+                </p>
+                <Button
+                  className="mt-6"
+                  variant="outline"
+                  onClick={() => setSubmitted(false)}
+                >
+                  Send another message
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MailIcon size={20} className="text-primary" />
+                  Send us a message
+                </CardTitle>
+                <CardDescription>
+                  Required fields are marked with an asterisk (*).
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      autoComplete="name"
+                      aria-invalid={!!errors.name}
+                      {...register("name")}
+                    />
+                    {errors.name && (
+                      <p className="text-sm text-red-600" role="alert">
+                        {errors.name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      aria-invalid={!!errors.email}
+                      {...register("email")}
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-red-600" role="alert">
+                        {errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message *</Label>
+                    <textarea
+                      id="message"
+                      rows={6}
+                      aria-invalid={!!errors.message}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      {...register("message")}
+                    />
+                    {errors.message && (
+                      <p className="text-sm text-red-600" role="alert">
+                        {errors.message.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Send message"
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </main>
-      <Footer />
+      </div>
     </div>
   )
 }

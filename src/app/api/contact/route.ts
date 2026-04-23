@@ -48,7 +48,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const parsed = contactSchema.safeParse(body)
+  const sanitizedBody =
+    body && typeof body === 'object'
+      ? {
+          name: typeof (body as Record<string, unknown>).name === 'string'
+            ? stripControlChars((body as Record<string, string>).name)
+            : (body as Record<string, unknown>).name,
+          email: typeof (body as Record<string, unknown>).email === 'string'
+            ? stripControlChars((body as Record<string, string>).email)
+            : (body as Record<string, unknown>).email,
+          message: typeof (body as Record<string, unknown>).message === 'string'
+            ? stripControlChars((body as Record<string, string>).message)
+            : (body as Record<string, unknown>).message,
+        }
+      : body
+
+  const parsed = contactSchema.safeParse(sanitizedBody)
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -59,13 +74,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const sanitized = {
-    name: stripControlChars(parsed.data.name),
-    email: stripControlChars(parsed.data.email),
-    message: stripControlChars(parsed.data.message),
-  }
-
-  const result = await sendContactFormEmail(sanitized)
+  const result = await sendContactFormEmail(parsed.data)
 
   if (!result.success) {
     return NextResponse.json(
