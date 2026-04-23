@@ -1,35 +1,40 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import Image from "next/image"
-import { useState, useEffect } from "react"
-import { CartIcon, MenuIcon, CloseIcon, UserIcon } from "@/components/icons"
-import { Home, Shield } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useCartStore } from "@/store/cart"
-import { useSession, signIn, signOut } from "next-auth/react"
+import Link from "next/link";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { CartIcon, MenuIcon, CloseIcon, UserIcon } from "@/components/icons";
+import { Home, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/store/cart";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const { items } = useCartStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { items } = useCartStore();
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
-  const itemCount = mounted ? items.reduce((acc, item) => acc + item.quantity, 0) : 0
-  const { data: session } = useSession()
+  const itemCount = mounted
+    ? items.reduce((acc, item) => acc + item.quantity, 0)
+    : 0;
+  const { data: session } = useSession();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60" role="banner">
+    <header
+      className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60"
+      role="banner"
+    >
       <div className="container-custom">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" aria-label="BestExpressPeptides - Home">
               <Image
-                src="/images/besttestexpress_logo.png"
-                alt="BestExpressPeptides"
+                src="/images/public/bestRxExpress.png"
+                alt="BestRxExpressPeptides"
                 width={296}
                 height={40}
                 style={{ height: "2.5rem", width: "auto" }}
@@ -59,9 +64,7 @@ export function Header() {
                   </Button>
                 </Link>
                 <Link href="/auth/signup">
-                  <Button size="sm">
-                    Sign Up
-                  </Button>
+                  <Button size="sm">Sign Up</Button>
                 </Link>
               </div>
             )}
@@ -78,25 +81,30 @@ export function Header() {
                 Admin
               </Button>
             </Link>
-            
-            <Link href="/" aria-label="Home">
+
+            {/* <Link href="/" aria-label="Home">
               <Button variant="outline" size="icon" aria-label="Home">
                 <Home size={20} />
               </Button>
-            </Link>
+            </Link> */}
 
-           
-
-            <Link href="/cart" className="relative" aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}>
+            {/* <Link
+              href="/cart"
+              className="relative"
+              aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} items` : ""}`}
+            >
               <Button variant="outline" size="icon" aria-label="View cart">
                 <CartIcon size={20} />
                 {itemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center" aria-hidden="true">
+                  <span
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center"
+                    aria-hidden="true"
+                  >
                     {itemCount}
                   </span>
                 )}
               </Button>
-            </Link>
+            </Link> */}
 
             <button
               className="md:hidden"
@@ -105,7 +113,11 @@ export function Header() {
               aria-controls="mobile-menu"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
+              {mobileMenuOpen ? (
+                <CloseIcon size={24} />
+              ) : (
+                <MenuIcon size={24} />
+              )}
             </button>
           </div>
         </div>
@@ -113,27 +125,50 @@ export function Header() {
         {mobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden py-4 border-t">
             <nav className="flex flex-col gap-4" aria-label="Mobile navigation">
-              <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href="/contact"
+                className="text-sm font-medium text-gray-600 hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Contact
               </Link>
-              <Link href="/admin/login" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href="/admin/login"
+                className="text-sm font-medium text-gray-600 hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Admin
               </Link>
               {session ? (
                 <>
-                  <Link href="/account" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/account"
+                    className="text-sm font-medium text-gray-600 hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Account
                   </Link>
-                  <button onClick={() => signOut()} className="text-sm font-medium text-gray-600 hover:text-primary text-left">
+                  <button
+                    onClick={() => signOut()}
+                    className="text-sm font-medium text-gray-600 hover:text-primary text-left"
+                  >
                     Sign Out
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/auth/signin" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/auth/signin"
+                    className="text-sm font-medium text-gray-600 hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Sign In
                   </Link>
-                  <Link href="/auth/signup" className="text-sm font-medium text-gray-600 hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/auth/signup"
+                    className="text-sm font-medium text-gray-600 hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Sign Up
                   </Link>
                 </>
@@ -143,5 +178,5 @@ export function Header() {
         )}
       </div>
     </header>
-  )
+  );
 }
