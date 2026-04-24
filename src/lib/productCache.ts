@@ -102,8 +102,17 @@ interface CachedCategory {
   }
 }
 
+export interface SkippedVariant {
+  productSlug: string
+  variantName: string
+  sku: string
+  rawPrice: string
+  reason: string
+}
+
 interface ProductCache {
   products: CachedProductFull[]
+  skippedVariants: SkippedVariant[]
   lastFetched: number
 }
 
@@ -143,12 +152,13 @@ function parseBoolean(value: string): boolean {
   return value?.toLowerCase().trim() === 'true' || value?.toLowerCase().trim() === 'yes' || value?.trim() === '1'
 }
 
-function parsePriceToCents(value: string): number | null {
-  if (!value || !value.trim()) return null
+function parsePriceToCents(value: string): { cents: number | null; reason?: string } {
+  if (!value || !value.trim()) return { cents: null, reason: 'Price is empty' }
   const cleaned = value.replace(/[^0-9.]/g, '')
   const dollars = parseFloat(cleaned)
-  if (isNaN(dollars) || dollars <= 0) return null
-  return Math.round(dollars * 100)
+  if (isNaN(dollars)) return { cents: null, reason: 'Price is not a number' }
+  if (dollars <= 0) return { cents: null, reason: 'Price must be greater than zero' }
+  return { cents: Math.round(dollars * 100) }
 }
 
 function parseCategories(value: string): string[] {
@@ -177,7 +187,7 @@ function toListItem(p: CachedProductFull): CachedProductListItem {
   }
 }
 
-async function fetchFromSheet(): Promise<CachedProductFull[]> {
+async function fetchFromSheet(): Promise<{ products: CachedProductFull[]; skippedVariants: SkippedVariant[] }> {
   const spreadsheetId = getSpreadsheetId()
   const sheets = await getUncachableGoogleSheetClient()
 
@@ -195,7 +205,7 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
   const productRows = productsResponse.data.values || []
   const variantRows = variantsResponse.data.values || []
 
-  if (productRows.length < 2) return []
+  if (productRows.length < 2) return { products: [], skippedVariants: [] }
 
   const headerMap: Record<string, string> = {
     'slug': 'slug',
@@ -235,6 +245,7 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
     : []
 
   const categoryMap = new Map<string, { id: string; name: string; slug: string }>()
+  const skippedVariants: SkippedVariant[] = []
 
   const products: CachedProductFull[] = normalizedProducts
     .filter((p: SheetProduct) => p.slug && p.name)
@@ -258,17 +269,25 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
       const productVariants = normalizedVariants
         .filter((v: SheetVariant) => slugify(v.productSlug || '') === normalizedSlug)
         .map((v: SheetVariant) => {
-          const price = parsePriceToCents(v.price)
-          if (price === null) {
+          const { cents, reason } = parsePriceToCents(v.price)
+          if (cents === null) {
+            const skipped: SkippedVariant = {
+              productSlug: normalizedSlug,
+              variantName: v.variantName || '',
+              sku: v.sku || '',
+              rawPrice: v.price ?? '',
+              reason: reason || 'Invalid price',
+            }
+            skippedVariants.push(skipped)
             console.warn(
-              `[productCache] Skipping variant with invalid price: product="${normalizedSlug}", variant="${v.variantName || ''}", sku="${v.sku || ''}", rawPrice="${v.price ?? ''}"`,
+              `[productCache] Skipping variant with invalid price: product="${skipped.productSlug}", variant="${skipped.variantName}", sku="${skipped.sku}", rawPrice="${skipped.rawPrice}", reason="${skipped.reason}"`,
             )
             return null
           }
           return {
             id: generateId('var', v.sku || `${normalizedSlug}-${v.variantName}`),
             name: v.variantName || '',
-            price,
+            price: cents,
             sku: v.sku || '',
             stock: parseInt(v.stock) || 0,
             productId,
@@ -298,7 +317,7 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
       }
     })
 
-  return products
+  return { products, skippedVariants }
 }
 
 async function getCache(): Promise<CachedProductFull[]> {
@@ -308,8 +327,8 @@ async function getCache(): Promise<CachedProductFull[]> {
   }
 
   try {
-    const products = await fetchFromSheet()
-    cache = { products, lastFetched: now }
+    const { products, skippedVariants } = await fetchFromSheet()
+    cache = { products, skippedVariants, lastFetched: now }
     return products
   } catch (error) {
     console.error('Error fetching products from Google Sheets:', error)
@@ -327,11 +346,17 @@ export function clearCache(): { cleared: boolean; previousLastFetched: number | 
   return { cleared: true, previousLastFetched }
 }
 
-export function getCacheStatus(): { cached: boolean; lastFetched: number | null; productCount: number } {
+export function getCacheStatus(): {
+  cached: boolean
+  lastFetched: number | null
+  productCount: number
+  skippedVariants: SkippedVariant[]
+} {
   return {
     cached: cache !== null,
     lastFetched: cache?.lastFetched || null,
     productCount: cache?.products.length || 0,
+    skippedVariants: cache?.skippedVariants || [],
   }
 }
 

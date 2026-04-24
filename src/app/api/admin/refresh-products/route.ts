@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       previousLastFetched,
       newLastFetched: status.lastFetched,
       productCount: status.productCount,
+      skippedVariants: status.skippedVariants,
     })
   } catch (error) {
     console.error("Error refreshing product cache:", error)
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
     return createUnauthorizedResponse()
   }
 
+  await getCachedProducts()
   const status = getCacheStatus()
   return NextResponse.json(status)
 }

@@ -8,9 +8,10 @@ import {
   ExternalLink,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Clock,
 } from "lucide-react";
-import type { CacheStatus, RefreshResult } from "@/types/admin";
+import type { CacheStatus, RefreshResult, SkippedVariant } from "@/types/admin";
 
 interface ProductCacheSyncProps {
   adminToken: string;
@@ -164,6 +165,14 @@ export function ProductCacheSync({
             </div>
           )}
 
+          <SkippedVariantsPanel
+            skippedVariants={
+              refreshResult?.skippedVariants ??
+              cacheStatus?.skippedVariants ??
+              []
+            }
+          />
+
           <p className="text-xs text-muted-foreground">
             The cache automatically refreshes every 5 minutes. Use the button
             above for immediate updates.
@@ -219,6 +228,58 @@ export function ProductCacheSync({
           </p>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SkippedVariantsPanel({
+  skippedVariants,
+}: {
+  skippedVariants: SkippedVariant[];
+}) {
+  if (!skippedVariants || skippedVariants.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+        <div className="text-sm w-full">
+          <p className="font-medium text-amber-900">
+            {skippedVariants.length} variant
+            {skippedVariants.length === 1 ? "" : "s"} skipped
+          </p>
+          <p className="text-xs text-amber-800 mt-1">
+            These rows were dropped because their price is empty, not a number,
+            or zero. Fix the price in the sheet and refresh again.
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-amber-900">
+            {skippedVariants.map((v, idx) => (
+              <li
+                key={`${v.productSlug}-${v.sku}-${v.variantName}-${idx}`}
+                className="rounded bg-amber-100/60 px-2 py-1"
+              >
+                <span className="font-medium">{v.productSlug}</span>
+                {v.variantName && (
+                  <>
+                    {" "}
+                    &middot; <span>{v.variantName}</span>
+                  </>
+                )}
+                {v.sku && (
+                  <>
+                    {" "}
+                    &middot; <span className="font-mono">{v.sku}</span>
+                  </>
+                )}
+                <span className="block opacity-80">
+                  price: <span className="font-mono">"{v.rawPrice}"</span> —{" "}
+                  {v.reason}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,16 +4,26 @@ export interface AdminUser {
   name: string
 }
 
+export interface SkippedVariant {
+  productSlug: string
+  variantName: string
+  sku: string
+  rawPrice: string
+  reason: string
+}
+
 export interface CacheStatus {
   cached: boolean
   lastFetched: number | null
   productCount: number
+  skippedVariants: SkippedVariant[]
 }
 
 export interface RefreshResult {
   success: boolean
   message?: string
   productCount?: number
+  skippedVariants?: SkippedVariant[]
   error?: string
   details?: string
 }
