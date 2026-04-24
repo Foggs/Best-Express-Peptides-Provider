@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { providerIntakeDeps } from "./deps"
+import { sendProviderSignupEmail } from "@/lib/signupEmail"
 
 function req(msg: string) {
   return { required_error: msg, invalid_type_error: msg }
@@ -129,6 +130,39 @@ export async function POST(request: NextRequest) {
       referredBy: data.referredBy,
       comments: data.comments ?? null,
     })
+
+    try {
+      const emailResult = await sendProviderSignupEmail({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        suffix: data.suffix ?? null,
+        email: data.email,
+        phone: data.phone,
+        companyName: data.companyName,
+        website: data.website,
+        taxId: data.taxId,
+        npiNumber: data.npiNumber,
+        npiOwnerMatch: data.npiOwnerMatch === "true",
+        hasResellerLicense: data.hasResellerLicense,
+        resellerPermitNumber: data.resellerPermitNumber ?? null,
+        addressLine1: data.addressLine1,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        referredBy: data.referredBy,
+        comments: data.comments ?? null,
+        resellerCertificateUploaded: Boolean(resellerCertificatePath),
+        businessLicenseUploaded: Boolean(businessLicensePath),
+      })
+      if (!emailResult.success) {
+        console.error(
+          "Provider signup admin email failed:",
+          emailResult.error,
+        )
+      }
+    } catch (emailErr) {
+      console.error("Unexpected error sending provider signup email:", emailErr)
+    }
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (err) {

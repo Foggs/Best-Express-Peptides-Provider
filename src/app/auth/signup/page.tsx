@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -106,7 +107,10 @@ function FileUploadInput({
 }
 
 export default function SignUpPage() {
+  const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [errors, setErrors] = useState<FieldErrors>({})
 
   const [firstName, setFirstName] = useState("")
@@ -161,13 +165,86 @@ export default function SignUpPage() {
     return Object.keys(e).length === 0
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitting) return
     if (!validate()) {
       document.querySelector("[data-error]")?.scrollIntoView({ behavior: "smooth", block: "center" })
       return
     }
-    setModalOpen(true)
+
+    setSubmitError(null)
+    setSubmitting(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("firstName", firstName)
+      formData.append("lastName", lastName)
+      if (suffix) formData.append("suffix", suffix)
+      formData.append("email", email)
+      formData.append("phone", phone)
+      formData.append("companyName", companyName)
+      formData.append("website", website)
+      formData.append("taxId", taxId)
+      formData.append("npiNumber", npiNumber)
+      formData.append("npiOwnerMatch", npiOwnerMatch)
+      formData.append("hasResellerLicense", hasResellerLicense)
+      if (hasResellerLicense === "YES") {
+        formData.append("resellerPermitNumber", resellerPermitNumber)
+      }
+      formData.append("addressLine1", addressLine1)
+      formData.append("city", city)
+      formData.append("state", state)
+      formData.append("zipCode", zipCode)
+      formData.append("referredBy", referredBy)
+      if (comments) formData.append("comments", comments)
+
+      const certFile = certRef.current?.files?.[0]
+      if (certFile) formData.append("resellerCertificate", certFile)
+
+      const licenseFile = licenseRef.current?.files?.[0]
+      if (licenseFile) formData.append("businessLicense", licenseFile)
+
+      const res = await fetch("/api/provider-intake", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        let message = "Something went wrong. Please try again."
+        let field: string | undefined
+        try {
+          const body = await res.json()
+          if (typeof body?.error === "string") message = body.error
+          if (typeof body?.field === "string") field = body.field
+        } catch {
+          // ignore body parse errors
+        }
+        if (field) {
+          setErrors((prev) => ({ ...prev, [field!]: message }))
+          document
+            .querySelector(`[id="${field}"]`)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        } else {
+          setSubmitError(message)
+        }
+        return
+      }
+
+      setModalOpen(true)
+    } catch (err) {
+      console.error("Signup submission failed:", err)
+      setSubmitError("Network error. Please check your connection and try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function handleModalOpenChange(open: boolean) {
+    setModalOpen(open)
+    if (!open) {
+      router.push("/thank-you")
+    }
   }
 
   return (
@@ -529,11 +606,17 @@ export default function SignUpPage() {
               </Link>
               .
             </p>
+            {submitError && (
+              <p className="text-red-600 text-sm mb-3" role="alert">
+                {submitError}
+              </p>
+            )}
             <Button
               type="submit"
+              disabled={submitting}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8"
             >
-              Submit
+              {submitting ? "Submitting…" : "Submit"}
             </Button>
           </div>
 
@@ -541,7 +624,7 @@ export default function SignUpPage() {
       </div>
 
       {/* ── Form Submitted Modal ─────────────────────────────── */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog open={modalOpen} onOpenChange={handleModalOpenChange}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader className="items-center">
             <CheckCircle className="h-12 w-12 text-green-500 mb-2" />
