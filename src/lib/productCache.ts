@@ -1,17 +1,8 @@
 import { revalidatePath } from 'next/cache'
 import { getUncachableGoogleSheetClient } from './googleSheets'
+import { getSpreadsheetId } from './sheetConfig'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
-
-function getSpreadsheetId(): string {
-  const id = process.env.GOOGLE_SHEET_ID
-  if (!id || !id.trim()) {
-    throw new Error(
-      'GOOGLE_SHEET_ID env var is not set. Set it to the Google Sheet ID that holds the Products and Variants tabs.',
-    )
-  }
-  return id.trim()
-}
 
 interface SheetProduct {
   slug: string

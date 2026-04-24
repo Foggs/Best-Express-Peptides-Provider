@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { getUncachableGoogleSheetClient } from "@/lib/googleSheets"
-
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
+import { getSpreadsheetId } from "@/lib/sheetConfig"
 
 function generateSku(productSlug: string, variantName: string): string {
   const slugPart = productSlug
@@ -75,9 +74,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!SPREADSHEET_ID) {
+    let spreadsheetId: string
+    try {
+      spreadsheetId = getSpreadsheetId()
+    } catch (err) {
       return NextResponse.json(
-        { success: false, error: "GOOGLE_SHEET_ID is not configured" },
+        { success: false, error: err instanceof Error ? err.message : String(err) },
         { status: 500 }
       )
     }
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     ])
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: "Variants",
       valueInputOption: "RAW",
       requestBody: {

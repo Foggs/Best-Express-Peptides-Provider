@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { getUncachableGoogleSheetClient } from "@/lib/googleSheets"
+import { getSpreadsheetId } from "@/lib/sheetConfig"
 import { clearCache } from "@/lib/productCache"
-
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
 
 function slugify(text: string): string {
   return text
@@ -85,9 +84,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!SPREADSHEET_ID) {
+    let spreadsheetId: string
+    try {
+      spreadsheetId = getSpreadsheetId()
+    } catch (err) {
       return NextResponse.json(
-        { success: false, error: "GOOGLE_SHEET_ID is not configured" },
+        { success: false, error: err instanceof Error ? err.message : String(err) },
         { status: 500 }
       )
     }
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
     const sheets = await getUncachableGoogleSheetClient()
 
     const productsResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: "Products!A:J",
     })
 
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
     ]
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: "Products",
       valueInputOption: "RAW",
       requestBody: {
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
     ])
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: "Variants",
       valueInputOption: "RAW",
       requestBody: {

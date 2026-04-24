@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { getUncachableGoogleSheetClient } from "@/lib/googleSheets"
-
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
+import { getSpreadsheetId } from "@/lib/sheetConfig"
 
 export async function GET(request: NextRequest) {
   const auth = verifyAdminAuth(request)
@@ -17,10 +16,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing name parameter" }, { status: 400 })
   }
 
+  let spreadsheetId: string
+  try {
+    spreadsheetId = getSpreadsheetId()
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 500 }
+    )
+  }
+
   try {
     const sheets = await getUncachableGoogleSheetClient()
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: "Products!A:J",
     })
 

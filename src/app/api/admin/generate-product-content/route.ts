@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
 import { getUncachableGoogleSheetClient } from "@/lib/googleSheets"
+import { getSpreadsheetId } from "@/lib/sheetConfig"
 import OpenAI from "openai"
-
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -63,9 +62,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!SPREADSHEET_ID) {
+    let spreadsheetId: string
+    try {
+      spreadsheetId = getSpreadsheetId()
+    } catch (err) {
       return NextResponse.json(
-        { success: false, error: "GOOGLE_SHEET_ID is not configured" },
+        { success: false, error: err instanceof Error ? err.message : String(err) },
         { status: 500 }
       )
     }
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
     const sheets = await getUncachableGoogleSheetClient()
 
     const productsResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: "Products!A:J",
     })
 
@@ -211,7 +213,7 @@ export async function POST(request: NextRequest) {
       }
 
       await sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: SPREADSHEET_ID,
+        spreadsheetId,
         requestBody: {
           valueInputOption: "RAW",
           data: updates,
