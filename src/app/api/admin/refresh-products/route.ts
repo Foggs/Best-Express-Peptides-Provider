@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       newLastFetched: status.lastFetched,
       productCount: status.productCount,
       skippedVariants: status.skippedVariants,
+      duplicateSlugs: status.duplicateSlugs,
     })
   } catch (error) {
     console.error("Error refreshing product cache:", error)

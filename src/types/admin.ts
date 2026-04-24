@@ -12,11 +12,24 @@ export interface SkippedVariant {
   reason: string
 }
 
+export interface DuplicateSlugRow {
+  rawSlug: string
+  name: string
+  rowNumber: number
+}
+
+export interface DuplicateSlug {
+  normalizedSlug: string
+  keptRow: DuplicateSlugRow
+  droppedRows: DuplicateSlugRow[]
+}
+
 export interface CacheStatus {
   cached: boolean
   lastFetched: number | null
   productCount: number
   skippedVariants: SkippedVariant[]
+  duplicateSlugs: DuplicateSlug[]
 }
 
 export interface RefreshResult {
@@ -24,6 +37,7 @@ export interface RefreshResult {
   message?: string
   productCount?: number
   skippedVariants?: SkippedVariant[]
+  duplicateSlugs?: DuplicateSlug[]
   error?: string
   details?: string
 }

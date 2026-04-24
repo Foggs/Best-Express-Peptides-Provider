@@ -110,9 +110,22 @@ export interface SkippedVariant {
   reason: string
 }
 
+export interface DuplicateSlugRow {
+  rawSlug: string
+  name: string
+  rowNumber: number
+}
+
+export interface DuplicateSlug {
+  normalizedSlug: string
+  keptRow: DuplicateSlugRow
+  droppedRows: DuplicateSlugRow[]
+}
+
 interface ProductCache {
   products: CachedProductFull[]
   skippedVariants: SkippedVariant[]
+  duplicateSlugs: DuplicateSlug[]
   lastFetched: number
 }
 
@@ -187,7 +200,11 @@ function toListItem(p: CachedProductFull): CachedProductListItem {
   }
 }
 
-async function fetchFromSheet(): Promise<{ products: CachedProductFull[]; skippedVariants: SkippedVariant[] }> {
+async function fetchFromSheet(): Promise<{
+  products: CachedProductFull[]
+  skippedVariants: SkippedVariant[]
+  duplicateSlugs: DuplicateSlug[]
+}> {
   const spreadsheetId = getSpreadsheetId()
   const sheets = await getUncachableGoogleSheetClient()
 
@@ -205,7 +222,7 @@ async function fetchFromSheet(): Promise<{ products: CachedProductFull[]; skippe
   const productRows = productsResponse.data.values || []
   const variantRows = variantsResponse.data.values || []
 
-  if (productRows.length < 2) return { products: [], skippedVariants: [] }
+  if (productRows.length < 2) return { products: [], skippedVariants: [], duplicateSlugs: [] }
 
   const headerMap: Record<string, string> = {
     'slug': 'slug',
@@ -247,8 +264,45 @@ async function fetchFromSheet(): Promise<{ products: CachedProductFull[]; skippe
   const categoryMap = new Map<string, { id: string; name: string; slug: string }>()
   const skippedVariants: SkippedVariant[] = []
 
-  const products: CachedProductFull[] = normalizedProducts
-    .filter((p: SheetProduct) => p.slug && p.name)
+  const seenSlugs = new Map<string, DuplicateSlugRow>()
+  const duplicatesMap = new Map<string, DuplicateSlug>()
+
+  const dedupedProducts: SheetProduct[] = normalizedProducts
+    .map((p, idx) => ({ p, sheetRowNumber: idx + 2 }))
+    .filter(({ p }) => p.slug && p.name)
+    .filter(({ p, sheetRowNumber }) => {
+      const normalizedSlug = slugify(p.slug)
+      if (!normalizedSlug) return false
+
+      const first = seenSlugs.get(normalizedSlug)
+      const thisRow: DuplicateSlugRow = {
+        rawSlug: p.slug,
+        name: p.name,
+        rowNumber: sheetRowNumber,
+      }
+
+      if (first) {
+        const existing = duplicatesMap.get(normalizedSlug) ?? {
+          normalizedSlug,
+          keptRow: first,
+          droppedRows: [],
+        }
+        existing.droppedRows.push(thisRow)
+        duplicatesMap.set(normalizedSlug, existing)
+        console.warn(
+          `[productCache] Duplicate slug "${normalizedSlug}" — keeping row ${first.rowNumber} ("${first.name}"), dropping row ${sheetRowNumber} ("${p.name}"). Fix the duplicate slug in the Products sheet.`,
+        )
+        return false
+      }
+
+      seenSlugs.set(normalizedSlug, thisRow)
+      return true
+    })
+    .map(({ p }) => p)
+
+  const duplicateSlugs = Array.from(duplicatesMap.values())
+
+  const products: CachedProductFull[] = dedupedProducts
     .map((p: SheetProduct) => {
       const categoryNames = parseCategories(p.category)
       const primaryCategoryName = categoryNames[0]
@@ -317,7 +371,7 @@ async function fetchFromSheet(): Promise<{ products: CachedProductFull[]; skippe
       }
     })
 
-  return { products, skippedVariants }
+  return { products, skippedVariants, duplicateSlugs }
 }
 
 async function getCache(): Promise<CachedProductFull[]> {
@@ -327,8 +381,8 @@ async function getCache(): Promise<CachedProductFull[]> {
   }
 
   try {
-    const { products, skippedVariants } = await fetchFromSheet()
-    cache = { products, skippedVariants, lastFetched: now }
+    const { products, skippedVariants, duplicateSlugs } = await fetchFromSheet()
+    cache = { products, skippedVariants, duplicateSlugs, lastFetched: now }
     return products
   } catch (error) {
     console.error('Error fetching products from Google Sheets:', error)
@@ -351,12 +405,14 @@ export function getCacheStatus(): {
   lastFetched: number | null
   productCount: number
   skippedVariants: SkippedVariant[]
+  duplicateSlugs: DuplicateSlug[]
 } {
   return {
     cached: cache !== null,
     lastFetched: cache?.lastFetched || null,
     productCount: cache?.products.length || 0,
     skippedVariants: cache?.skippedVariants || [],
+    duplicateSlugs: cache?.duplicateSlugs || [],
   }
 }
 

@@ -11,7 +11,12 @@ import {
   AlertTriangle,
   Clock,
 } from "lucide-react";
-import type { CacheStatus, RefreshResult, SkippedVariant } from "@/types/admin";
+import type {
+  CacheStatus,
+  DuplicateSlug,
+  RefreshResult,
+  SkippedVariant,
+} from "@/types/admin";
 
 interface ProductCacheSyncProps {
   adminToken: string;
@@ -165,6 +170,14 @@ export function ProductCacheSync({
             </div>
           )}
 
+          <DuplicateSlugsPanel
+            duplicateSlugs={
+              refreshResult?.duplicateSlugs ??
+              cacheStatus?.duplicateSlugs ??
+              []
+            }
+          />
+
           <SkippedVariantsPanel
             skippedVariants={
               refreshResult?.skippedVariants ??
@@ -228,6 +241,65 @@ export function ProductCacheSync({
           </p>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function DuplicateSlugsPanel({
+  duplicateSlugs,
+}: {
+  duplicateSlugs: DuplicateSlug[];
+}) {
+  if (!duplicateSlugs || duplicateSlugs.length === 0) return null;
+
+  const totalDropped = duplicateSlugs.reduce(
+    (sum, d) => sum + d.droppedRows.length,
+    0,
+  );
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+        <div className="text-sm w-full">
+          <p className="font-medium text-amber-900">
+            {duplicateSlugs.length} duplicate slug
+            {duplicateSlugs.length === 1 ? "" : "s"} ({totalDropped} row
+            {totalDropped === 1 ? "" : "s"} dropped)
+          </p>
+          <p className="text-xs text-amber-800 mt-1">
+            Two or more rows in the Products sheet share the same slug after
+            normalization. Only the first row was kept; the rest were dropped to
+            avoid product ID collisions. Make each slug unique and refresh
+            again.
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-amber-900">
+            {duplicateSlugs.map((d) => (
+              <li
+                key={d.normalizedSlug}
+                className="rounded bg-amber-100/60 px-2 py-1"
+              >
+                <span className="font-medium">slug:</span>{" "}
+                <span className="font-mono">{d.normalizedSlug}</span>
+                <span className="block opacity-90">
+                  kept row {d.keptRow.rowNumber}{" "}
+                  <span className="font-mono">"{d.keptRow.rawSlug}"</span> —{" "}
+                  {d.keptRow.name}
+                </span>
+                {d.droppedRows.map((r, idx) => (
+                  <span
+                    key={`${d.normalizedSlug}-dropped-${r.rowNumber}-${idx}`}
+                    className="block opacity-80"
+                  >
+                    dropped row {r.rowNumber}{" "}
+                    <span className="font-mono">"{r.rawSlug}"</span> — {r.name}
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
