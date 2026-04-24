@@ -134,10 +134,11 @@ function parseBoolean(value: string): boolean {
   return value?.toLowerCase().trim() === 'true' || value?.toLowerCase().trim() === 'yes' || value?.trim() === '1'
 }
 
-function parsePriceToCents(value: string): number {
+function parsePriceToCents(value: string): number | null {
+  if (!value || !value.trim()) return null
   const cleaned = value.replace(/[^0-9.]/g, '')
   const dollars = parseFloat(cleaned)
-  if (isNaN(dollars)) return 0
+  if (isNaN(dollars) || dollars <= 0) return null
   return Math.round(dollars * 100)
 }
 
@@ -246,14 +247,24 @@ async function fetchFromSheet(): Promise<CachedProductFull[]> {
       const productId = generateId('prod', normalizedSlug)
       const productVariants = normalizedVariants
         .filter((v: SheetVariant) => slugify(v.productSlug || '') === normalizedSlug)
-        .map((v: SheetVariant) => ({
-          id: generateId('var', v.sku || `${normalizedSlug}-${v.variantName}`),
-          name: v.variantName || '',
-          price: parsePriceToCents(v.price),
-          sku: v.sku || '',
-          stock: parseInt(v.stock) || 0,
-          productId,
-        }))
+        .map((v: SheetVariant) => {
+          const price = parsePriceToCents(v.price)
+          if (price === null) {
+            console.warn(
+              `[productCache] Skipping variant with invalid price: product="${normalizedSlug}", variant="${v.variantName || ''}", sku="${v.sku || ''}", rawPrice="${v.price ?? ''}"`,
+            )
+            return null
+          }
+          return {
+            id: generateId('var', v.sku || `${normalizedSlug}-${v.variantName}`),
+            name: v.variantName || '',
+            price,
+            sku: v.sku || '',
+            stock: parseInt(v.stock) || 0,
+            productId,
+          }
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null)
         .sort((a, b) => a.price - b.price)
 
       return {
@@ -528,6 +539,7 @@ export async function decrementStock(items: StockCheckItem[]): Promise<Decrement
 
   clearCache()
   revalidatePath('/peptides', 'layout')
+  revalidatePath('/', 'layout')
 
   return { success: true, lowStockWarnings }
 }

@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const { cleared, previousLastFetched } = clearCache()
     revalidatePath('/peptides', 'layout')
+    revalidatePath('/', 'layout')
     const products = await getCachedProducts()
     const status = getCacheStatus()
 

@@ -152,6 +152,53 @@ async function run() {
       `variants sorted asc: [${prices}]`,
     )
 
+    // ── Test 6: variants with invalid prices are dropped ─────────────────
+    console.log("\n6. Variants with invalid/zero/empty prices are dropped + warned")
+
+    const warnings: string[] = []
+    const origWarn = console.warn
+    console.warn = (msg: unknown) => { warnings.push(String(msg)) }
+
+    sheetsMock = makeSheetsMock(
+      [
+        ["slug", "name", "category", "shortDescription", "description", "research", "shippingInfo", "faq", "featured", "active"],
+        ["mixed", "Mixed Product", "Peptides", "", "desc", "", "", "", "false", "true"],
+        ["all-bad", "All Bad Prices", "Peptides", "", "desc", "", "", "", "false", "true"],
+      ],
+      [
+        ["productSlug", "variantName", "price", "sku", "stock"],
+        ["mixed", "5mg", "$50.00", "MX-5", "10"],
+        ["mixed", "10mg", "", "MX-10", "10"],         // empty
+        ["mixed", "20mg", "typo", "MX-20", "10"],     // non-numeric
+        ["mixed", "30mg", "$0.00", "MX-30", "10"],    // zero
+        ["all-bad", "5mg", "", "AB-5", "5"],
+        ["all-bad", "10mg", "$0", "AB-10", "5"],
+      ],
+    )
+
+    clearCache()
+    let products6
+    try {
+      products6 = await getCachedProducts()
+    } finally {
+      console.warn = origWarn
+    }
+
+    const mixed = products6.find((p: { slug: string }) => p.slug === "mixed")
+    assert(!!mixed, `"mixed" product is returned`)
+    assert(mixed.variants.length === 1, `"mixed" has only 1 valid variant (got ${mixed.variants.length})`)
+    assert(mixed.variants[0].name === "5mg", `kept variant is the 5mg one`)
+    assert(mixed.variants[0].price === 5000, `kept variant price = 5000¢`)
+
+    const allBad = products6.find((p: { slug: string }) => p.slug === "all-bad")
+    assert(!allBad, `"all-bad" (no valid variants) is excluded from listings`)
+
+    assert(warnings.length === 5, `5 warnings were logged for invalid prices (got ${warnings.length})`)
+    assert(
+      warnings.every(w => w.includes("[productCache]") && w.includes("invalid price")),
+      `each warning is tagged and explains the cause`,
+    )
+
   } finally {
     nodeModule._load = origLoad
   }
