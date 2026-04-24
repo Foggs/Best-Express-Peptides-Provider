@@ -16,12 +16,34 @@ const WARMUP_PATHS = [
   '/api/checkout',
 ]
 
+async function waitForServerReady(ctx: Awaited<ReturnType<typeof request.newContext>>) {
+  const deadline = Date.now() + 30_000
+  let lastErr: unknown = null
+  while (Date.now() < deadline) {
+    try {
+      const res = await ctx.get('/', { timeout: 5_000, failOnStatusCode: false })
+      if (res.status() < 500) return
+      lastErr = new Error(`status ${res.status()}`)
+    } catch (err) {
+      lastErr = err
+    }
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  const message = lastErr instanceof Error ? lastErr.message : String(lastErr)
+  throw new Error(
+    `[global-setup] Dev server at ${BASE_URL} did not become reachable within 30s. ` +
+      `Last error: ${message}. Start the Next.js dev server (npm run dev) before running e2e tests.`,
+  )
+}
+
 async function warmupRoutes() {
   console.log('[global-setup] Warming up Next.js dev-server routes...')
   const ctx = await request.newContext({
     baseURL: BASE_URL,
     extraHTTPHeaders: { 'cache-control': 'no-cache' },
   })
+
+  await waitForServerReady(ctx)
 
   for (const path of WARMUP_PATHS) {
     const start = Date.now()
