@@ -14,8 +14,16 @@ async function getAccessToken() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
+  if (!hostname) {
+    throw new Error(
+      'REPLIT_CONNECTORS_HOSTNAME env var is not set — cannot reach the Replit Connectors service to authenticate with Google Sheets.',
+    );
+  }
+
   if (!xReplitToken) {
-    throw new Error('X-Replit-Token not found for repl/depl');
+    throw new Error(
+      'Replit identity token not found (REPL_IDENTITY or WEB_REPL_RENEWAL must be set) — cannot authenticate the Google Sheets connector.',
+    );
   }
 
   connectionSettings = await fetch(
@@ -30,9 +38,18 @@ async function getAccessToken() {
 
   const accessToken = connectionSettings?.settings?.access_token || connectionSettings?.settings?.oauth?.credentials?.access_token;
 
-  if (!connectionSettings || !accessToken) {
-    throw new Error('Google Sheet not connected');
+  if (!connectionSettings) {
+    throw new Error(
+      'Google Sheets connector is not connected. Open Replit\'s Integrations panel and connect the "google-sheet" connector.',
+    );
   }
+
+  if (!accessToken) {
+    throw new Error(
+      'Google Sheets connector is connected but did not return an access token. Try disconnecting and reconnecting it in Replit\'s Integrations panel.',
+    );
+  }
+
   return accessToken;
 }
 

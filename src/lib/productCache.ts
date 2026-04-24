@@ -1,8 +1,17 @@
 import { revalidatePath } from 'next/cache'
 import { getUncachableGoogleSheetClient } from './googleSheets'
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID!
 const CACHE_TTL_MS = 5 * 60 * 1000
+
+function getSpreadsheetId(): string {
+  const id = process.env.GOOGLE_SHEET_ID
+  if (!id || !id.trim()) {
+    throw new Error(
+      'GOOGLE_SHEET_ID env var is not set. Set it to the Google Sheet ID that holds the Products and Variants tabs.',
+    )
+  }
+  return id.trim()
+}
 
 interface SheetProduct {
   slug: string
@@ -169,15 +178,16 @@ function toListItem(p: CachedProductFull): CachedProductListItem {
 }
 
 async function fetchFromSheet(): Promise<CachedProductFull[]> {
+  const spreadsheetId = getSpreadsheetId()
   const sheets = await getUncachableGoogleSheetClient()
 
   const [productsResponse, variantsResponse] = await Promise.all([
     sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: 'Products!A:J',
     }),
     sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: 'Variants!A:E',
     }),
   ])
@@ -415,10 +425,11 @@ export interface StockCheckResult {
 }
 
 export async function checkStock(items: StockCheckItem[]): Promise<StockCheckResult> {
+  const spreadsheetId = getSpreadsheetId()
   const sheets = await getUncachableGoogleSheetClient()
 
   const variantsResponse = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId,
     range: 'Variants!A:E',
   })
 
@@ -474,10 +485,11 @@ export interface DecrementResult {
 const LOW_STOCK_THRESHOLD = 5
 
 export async function decrementStock(items: StockCheckItem[]): Promise<DecrementResult> {
+  const spreadsheetId = getSpreadsheetId()
   const sheets = await getUncachableGoogleSheetClient()
 
   const variantsResponse = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId,
     range: 'Variants!A:E',
   })
 
@@ -530,7 +542,7 @@ export async function decrementStock(items: StockCheckItem[]): Promise<Decrement
   }
 
   await sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId: getSpreadsheetId(),
     requestBody: {
       valueInputOption: 'RAW',
       data: updates,
