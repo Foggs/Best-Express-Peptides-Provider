@@ -161,6 +161,20 @@ enum ApplicationStatus {
   REJECTED
 }
 
+model StockSyncFailure {
+  id          String    @id @default(cuid())
+  orderNumber String?
+  items       Json
+  error       String    @db.Text
+  attempts    Int       @default(1)
+  resolved    Boolean   @default(false)
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([resolved, createdAt])
+}
+
 model ProviderApplication {
   id                      String            @id @default(cuid())
   firstName               String

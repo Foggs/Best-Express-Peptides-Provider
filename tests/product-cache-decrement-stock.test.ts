@@ -4,6 +4,9 @@ const _require = createRequire(import.meta.url)
 const nodeModule = _require("module") as { _load: Function }
 
 process.env.GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || "TEST_SHEET_ID"
+// Keep retry backoff fast so the test suite stays under a second.
+process.env.STOCK_WRITE_MIN_TIMEOUT_MS = "1"
+process.env.STOCK_WRITE_MAX_TIMEOUT_MS = "5"
 
 let passed = 0
 let failed = 0
@@ -41,6 +44,41 @@ function makeSheetMock(rows: string[][]) {
         },
       },
     },
+  }
+}
+
+/**
+ * Build a mock whose `batchUpdate` calls a user-supplied handler so tests can
+ * inject transient or permanent failures.  The handler receives the 1-indexed
+ * call number and may return a value (success) or throw an error.
+ */
+function makeFlakyBatchUpdateMock(
+  rows: string[][],
+  batchUpdateHandler: (callIndex: number, call: BatchUpdateCall) => unknown | Promise<unknown>,
+) {
+  const batchUpdates: BatchUpdateCall[] = []
+  return {
+    batchUpdates,
+    client: {
+      spreadsheets: {
+        values: {
+          get: async () => ({ data: { values: rows } }),
+          batchUpdate: async (call: BatchUpdateCall) => {
+            batchUpdates.push(call)
+            return batchUpdateHandler(batchUpdates.length, call)
+          },
+        },
+      },
+    },
+  }
+}
+
+class FakeSheetsHttpError extends Error {
+  code: number
+  constructor(code: number, message: string) {
+    super(message)
+    this.code = code
+    this.name = "FakeSheetsHttpError"
   }
 }
 
@@ -192,6 +230,86 @@ async function run() {
     assert(mock.batchUpdates.length === 1, "1 batchUpdate call")
     assert(mock.batchUpdates[0].requestBody.data.length === 1, "only 1 update entry (ghost skipped)")
     assert(mock.batchUpdates[0].requestBody.data[0].range === "Variants!E2", "matched row only")
+
+    // ── Test 11: transient failure (5xx) → retries → eventually succeeds ──
+    console.log("\n11. Transient 503 on first 2 batchUpdate calls → retries → succeeds on 3rd")
+    const flakyMock = makeFlakyBatchUpdateMock(
+      [
+        ["productSlug", "variantName", "price", "sku", "stock"],
+        ["retry-prod", "5mg", "$40.00", "RT-5", "20"],
+      ],
+      (callIndex) => {
+        if (callIndex < 3) {
+          throw new FakeSheetsHttpError(503, "Service Unavailable")
+        }
+        return { data: {} }
+      },
+    )
+    mock = flakyMock as unknown as ReturnType<typeof makeSheetMock>
+    revalidateCalls.length = 0
+    const r11 = await decrementStock([{ slug: "retry-prod", variantName: "5mg", quantity: 1 }])
+    assert(r11.success === true, "success = true after retry")
+    assert(flakyMock.batchUpdates.length === 3, `batchUpdate retried until success (called ${flakyMock.batchUpdates.length}× — expected 3)`)
+    assert(r11.attempts === 3, `attempts counter reflects retries (got ${r11.attempts})`)
+    assert(r11.error === undefined, "no error on eventual success")
+    assert(revalidateCalls.includes("/peptides"), "cache revalidated on eventual success")
+
+    // ── Test 12: transient failure that exhausts all retries ──────────────
+    console.log("\n12. Persistent 503 exhausts retries → returns { success: false, error }")
+    const exhaustMock = makeFlakyBatchUpdateMock(
+      [
+        ["productSlug", "variantName", "price", "sku", "stock"],
+        ["exhaust-prod", "5mg", "$40.00", "EX-5", "20"],
+      ],
+      () => {
+        throw new FakeSheetsHttpError(503, "Service Unavailable")
+      },
+    )
+    mock = exhaustMock as unknown as ReturnType<typeof makeSheetMock>
+    revalidateCalls.length = 0
+    let r12: any
+    let r12Threw = false
+    try {
+      r12 = await decrementStock([{ slug: "exhaust-prod", variantName: "5mg", quantity: 1 }])
+    } catch (e) {
+      r12Threw = true
+    }
+    assert(r12Threw === false, "decrementStock does NOT throw when retries are exhausted")
+    assert(r12.success === false, "success = false on exhaustion")
+    assert(typeof r12.error === "string" && r12.error.length > 0, `error string returned ("${r12.error}")`)
+    assert(r12.error.includes("503") || r12.error.includes("Service Unavailable"), "error message preserves underlying cause")
+    assert(exhaustMock.batchUpdates.length > 1, `multiple retries attempted (got ${exhaustMock.batchUpdates.length})`)
+    assert(exhaustMock.batchUpdates.length === 5, `retried up to retries+1 = 5 attempts (got ${exhaustMock.batchUpdates.length})`)
+    assert(r12.attempts === 5, `attempts counter = 5 (got ${r12.attempts})`)
+    assert(revalidateCalls.length === 0, "cache NOT revalidated on failure")
+
+    // ── Test 13: permanent (4xx) failure fails fast — no retries ──────────
+    console.log("\n13. Permanent 400 (bad request) fails fast — no retry")
+    const permMock = makeFlakyBatchUpdateMock(
+      [
+        ["productSlug", "variantName", "price", "sku", "stock"],
+        ["perm-prod", "5mg", "$40.00", "PM-5", "20"],
+      ],
+      () => {
+        throw new FakeSheetsHttpError(400, "Bad Request: malformed range")
+      },
+    )
+    mock = permMock as unknown as ReturnType<typeof makeSheetMock>
+    revalidateCalls.length = 0
+    let r13: any
+    let r13Threw = false
+    try {
+      r13 = await decrementStock([{ slug: "perm-prod", variantName: "5mg", quantity: 1 }])
+    } catch (e) {
+      r13Threw = true
+    }
+    assert(r13Threw === false, "decrementStock does NOT throw on permanent failure")
+    assert(r13.success === false, "success = false on permanent failure")
+    assert(typeof r13.error === "string" && r13.error.length > 0, `error string returned ("${r13.error}")`)
+    assert(r13.error.includes("Bad Request") || r13.error.includes("400"), "error message preserves underlying cause")
+    assert(permMock.batchUpdates.length === 1, `permanent error fails fast — exactly 1 batchUpdate call (got ${permMock.batchUpdates.length})`)
+    assert(r13.attempts === 1, `attempts counter = 1 — no retry on 4xx (got ${r13.attempts})`)
+    assert(revalidateCalls.length === 0, "cache NOT revalidated on failure")
 
   } finally {
     nodeModule._load = origLoad

@@ -100,6 +100,8 @@ Required environment variables:
 - Checkout flow: validate stock → create order in DB → decrement stock → send order email
 - Order is created in the database BEFORE stock is decremented to prevent silent stock loss
 - If order creation fails, stock is never touched; if stock decrement fails, the order is cancelled
+- `decrementStock()` retries transient Sheets API failures (5xx / 429 / network) with exponential backoff via `p-retry` (4 retries, 200ms→4s); permanent 4xx errors fail fast via `AbortError`. The function returns `{ success: false, error, attempts }` instead of throwing.
+- When decrement ultimately fails, the checkout route writes a `StockSyncFailure` row (`{ orderNumber, items, error, attempts }`) so an admin can reconcile the sheet manually — sheet-write failures are never silently swallowed.
 - `OrderItem` stores `productName` and `variantName` directly (no foreign key to Product/ProductVariant tables, since product data lives in Google Sheets)
 - 409 response returned if any items have insufficient stock (with details per item)
 - UI caps quantity selectors at available stock on both product detail and cart pages

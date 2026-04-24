@@ -196,7 +196,30 @@ export async function POST(request: NextRequest) {
     const decrementResult = await checkoutDeps.decrementStock(stockItems)
 
     if (!decrementResult.success) {
-      console.error("Failed to decrement stock after order created, cancelling order:", decrementResult.error)
+      console.error(
+        `[checkout] Stock decrement failed for order ${orderNumber} after ${decrementResult.attempts ?? 0} attempt(s): ${decrementResult.error}`,
+      )
+
+      // Record the failure so an admin can reconcile inventory in the
+      // sheet manually.  Never let a sheet-write failure silently swallow
+      // an order — the customer's order exists in the DB and the on-sheet
+      // stock count is now out of sync.
+      try {
+        await prisma.stockSyncFailure.create({
+          data: {
+            orderNumber,
+            items: stockItems as unknown as Prisma.InputJsonValue,
+            error: decrementResult.error ?? "Unknown stock decrement error",
+            attempts: decrementResult.attempts ?? 0,
+          },
+        })
+      } catch (recordError) {
+        console.error(
+          `[checkout] CRITICAL: Failed to record StockSyncFailure for order ${orderNumber}. Manual reconciliation required.`,
+          recordError,
+        )
+      }
+
       try {
         await prisma.order.update({
           where: { orderNumber },

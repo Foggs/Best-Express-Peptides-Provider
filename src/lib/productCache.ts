@@ -552,18 +552,51 @@ export interface DecrementResult {
   success: boolean
   lowStockWarnings: { productSlug: string; variantName: string; remainingStock: number }[]
   error?: string
+  attempts?: number
 }
 
 const LOW_STOCK_THRESHOLD = 5
+
+const STOCK_WRITE_RETRY_OPTIONS = {
+  retries: 4,
+  factor: 2,
+  minTimeout: Number(process.env.STOCK_WRITE_MIN_TIMEOUT_MS ?? 200),
+  maxTimeout: Number(process.env.STOCK_WRITE_MAX_TIMEOUT_MS ?? 4000),
+  randomize: false,
+} as const
+
+function getSheetsErrorStatus(err: unknown): number | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  const e = err as { code?: unknown; status?: unknown; response?: { status?: unknown } }
+  const fromCode = typeof e.code === 'number' ? e.code : (typeof e.code === 'string' && /^\d+$/.test(e.code) ? Number(e.code) : undefined)
+  const fromStatus = typeof e.status === 'number' ? e.status : undefined
+  const fromResponse = e.response && typeof e.response.status === 'number' ? e.response.status : undefined
+  return fromCode ?? fromStatus ?? fromResponse
+}
+
+function isTransientSheetsError(err: unknown): boolean {
+  const status = getSheetsErrorStatus(err)
+  if (status === undefined) {
+    // Network/DNS/socket errors (no HTTP status) are treated as transient.
+    return true
+  }
+  return status === 408 || status === 429 || (status >= 500 && status <= 599)
+}
 
 export async function decrementStock(items: StockCheckItem[]): Promise<DecrementResult> {
   const spreadsheetId = getSpreadsheetId()
   const sheets = await getUncachableGoogleSheetClient()
 
-  const variantsResponse = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'Variants!A:E',
-  })
+  let variantsResponse
+  try {
+    variantsResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'Variants!A:E',
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, lowStockWarnings: [], error: `Failed to read Variants sheet: ${message}` }
+  }
 
   const rows = variantsResponse.data.values || []
   if (rows.length < 2) {
@@ -613,19 +646,53 @@ export async function decrementStock(items: StockCheckItem[]): Promise<Decrement
     return { success: true, lowStockWarnings: [] }
   }
 
-  await sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId: getSpreadsheetId(),
-    requestBody: {
-      valueInputOption: 'RAW',
-      data: updates,
-    },
-  })
+  // Retry transient Sheets API failures (5xx/429/network errors) with
+  // exponential backoff.  Permanent failures (4xx other than 429) are
+  // raised as AbortError so p-retry stops immediately.
+  const pRetryModule = await import('p-retry')
+  const pRetry = pRetryModule.default
+  const AbortError = pRetryModule.AbortError
+
+  let attempts = 0
+  try {
+    await pRetry(
+      async () => {
+        attempts++
+        try {
+          await sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId,
+            requestBody: {
+              valueInputOption: 'RAW',
+              data: updates,
+            },
+          })
+        } catch (err) {
+          if (isTransientSheetsError(err)) {
+            throw err
+          }
+          throw new AbortError(err instanceof Error ? err : new Error(String(err)))
+        }
+      },
+      STOCK_WRITE_RETRY_OPTIONS,
+    )
+  } catch (err) {
+    const inner = err && typeof err === 'object' && 'originalError' in err
+      ? (err as { originalError: Error }).originalError
+      : err
+    const message = inner instanceof Error ? inner.message : String(inner)
+    return {
+      success: false,
+      lowStockWarnings: [],
+      error: `Failed to decrement stock in Google Sheets after ${attempts} attempt(s): ${message}`,
+      attempts,
+    }
+  }
 
   clearCache()
   revalidatePath('/peptides', 'layout')
   revalidatePath('/', 'layout')
 
-  return { success: true, lowStockWarnings }
+  return { success: true, lowStockWarnings, attempts }
 }
 
 export async function getCachedCategories(): Promise<CachedCategory[]> {
