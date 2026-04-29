@@ -26,6 +26,7 @@ export const setPasswordDeps = {
       where: {
         setupTokenHash: params.tokenHash,
         setupTokenExpiresAt: { gt: params.now },
+        status: "PENDING",
       },
       data: {
         password: params.passwordHash,
