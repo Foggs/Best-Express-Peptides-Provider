@@ -2,6 +2,8 @@ import { NextRequest } from "next/server"
 import * as fs from "fs"
 import { POST as approvePOST } from "../src/app/api/admin/applications/[id]/approve/route"
 import { approveApplicationDeps } from "../src/app/api/admin/applications/[id]/approve/deps"
+import { POST as rejectPOST } from "../src/app/api/admin/applications/[id]/reject/route"
+import { rejectApplicationDeps } from "../src/app/api/admin/applications/[id]/reject/deps"
 import { POST as intakePOST } from "../src/app/api/provider-intake/route"
 import { providerIntakeDeps } from "../src/app/api/provider-intake/deps"
 import { consumeSetupToken } from "../src/app/auth/set-password/deps"
@@ -56,6 +58,15 @@ function makeApproveReq(id: string, withAuth = true): NextRequest {
   const headers: Record<string, string> = {}
   if (withAuth) headers.authorization = `Bearer ${adminToken()}`
   return new NextRequest(`http://localhost/api/admin/applications/${id}/approve`, {
+    method: "POST",
+    headers,
+  })
+}
+
+function makeRejectReq(id: string, withAuth = true): NextRequest {
+  const headers: Record<string, string> = {}
+  if (withAuth) headers.authorization = `Bearer ${adminToken()}`
+  return new NextRequest(`http://localhost/api/admin/applications/${id}/reject`, {
     method: "POST",
     headers,
   })
@@ -369,6 +380,86 @@ async function run() {
   }
   const r12 = await approvePOST(makeApproveReq("app-z"), ctx("app-z"))
   assert(r12.status === 500, `DB error → 500 (got ${r12.status})`)
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Reject route
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log("\n12a. Reject route rejects unauthenticated requests with 401")
+  const rR1 = await rejectPOST(makeRejectReq("app-1", false), ctx("app-1"))
+  assert(rR1.status === 401, `unauth returns 401 (got ${rR1.status})`)
+
+  console.log("\n12b. Reject route returns 404 when application missing")
+  rejectApplicationDeps.findApplication = async () => null
+  const rR2 = await rejectPOST(makeRejectReq("missing"), ctx("missing"))
+  assert(rR2.status === 404, `missing app → 404 (got ${rR2.status})`)
+
+  console.log("\n12c. Reject route refuses to reject an already-APPROVED application (409)")
+  let rejectStatusFlips = 0
+  let rejectEmailSends = 0
+  rejectApplicationDeps.findApplication = async () =>
+    ({ id: "a", email: "x@y.com", firstName: "X", lastName: "Y", status: "APPROVED" }) as any
+  rejectApplicationDeps.setApplicationRejected = async () => {
+    rejectStatusFlips++
+    return { id: "a" } as any
+  }
+  rejectApplicationDeps.sendRejectionEmail = async () => {
+    rejectEmailSends++
+    return { success: true }
+  }
+  const rR3 = await rejectPOST(makeRejectReq("a"), ctx("a"))
+  assert(rR3.status === 409, `already APPROVED → 409 (got ${rR3.status})`)
+  assert(rejectStatusFlips === 0, `status NOT flipped when application is already decided`)
+  assert(rejectEmailSends === 0, `no email sent when application is already decided`)
+
+  console.log("\n12d. Reject route is idempotent-safe: already-REJECTED returns 409, no double email")
+  rejectStatusFlips = 0
+  rejectEmailSends = 0
+  rejectApplicationDeps.findApplication = async () =>
+    ({ id: "a", email: "x@y.com", firstName: "X", lastName: "Y", status: "REJECTED" }) as any
+  const rR4 = await rejectPOST(makeRejectReq("a"), ctx("a"))
+  assert(rR4.status === 409, `already REJECTED → 409 (got ${rR4.status})`)
+  assert(rejectStatusFlips === 0 && rejectEmailSends === 0, `no DB write or email on second reject`)
+
+  console.log("\n12e. Reject route happy path: flips PENDING → REJECTED and emails the applicant")
+  let flippedId: string | undefined
+  let emailedRejectTo: string | undefined
+  let emailedRejectName: string | undefined
+  rejectApplicationDeps.findApplication = async () =>
+    ({ id: "app-r", email: "decline@clinic.com", firstName: "De", lastName: "Cline", status: "PENDING" }) as any
+  rejectApplicationDeps.setApplicationRejected = async (id) => {
+    flippedId = id
+    return { id } as any
+  }
+  rejectApplicationDeps.sendRejectionEmail = async (data) => {
+    emailedRejectTo = data.email
+    emailedRejectName = data.name
+    return { success: true }
+  }
+  const rR5 = await rejectPOST(makeRejectReq("app-r"), ctx("app-r"))
+  const jR5 = await rR5.json()
+  assert(rR5.status === 200, `happy path → 200 (got ${rR5.status})`)
+  assert(jR5.success === true, `body.success = true`)
+  assert(flippedId === "app-r", `application flipped to REJECTED via setApplicationRejected`)
+  assert(emailedRejectTo === "decline@clinic.com", `rejection email sent to applicant address`)
+  assert(emailedRejectName === "De Cline", `rejection email uses applicant full name`)
+
+  console.log("\n12f. Reject route returns 200 with warning when email send fails")
+  rejectApplicationDeps.findApplication = async () =>
+    ({ id: "app-rw", email: "warn@clinic.com", firstName: "W", lastName: "Z", status: "PENDING" }) as any
+  rejectApplicationDeps.setApplicationRejected = async () => ({ id: "app-rw" }) as any
+  rejectApplicationDeps.sendRejectionEmail = async () => ({ success: false, error: "boom" })
+  const rR6 = await rejectPOST(makeRejectReq("app-rw"), ctx("app-rw"))
+  const jR6 = await rR6.json()
+  assert(rR6.status === 200, `email-fail → still 200 (got ${rR6.status})`)
+  assert(jR6.success === true, `body.success = true`)
+  assert(typeof jR6.warning === "string" && jR6.warning.length > 0, `warning string present`)
+
+  console.log("\n12g. Reject route returns 500 when DB throws")
+  rejectApplicationDeps.findApplication = async () => {
+    throw new Error("DB_DOWN")
+  }
+  const rR7 = await rejectPOST(makeRejectReq("app-rz"), ctx("app-rz"))
+  assert(rR7.status === 500, `DB error → 500 (got ${rR7.status})`)
 
   // ──────────────────────────────────────────────────────────────────────────
   // consumeSetupToken (set-password Server Action core)

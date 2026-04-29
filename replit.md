@@ -25,7 +25,7 @@ A production-ready e-commerce website for selling research peptides built with N
 
 ### Vetted Provider Onboarding
 - Provider intake at `/auth/signup` posts to `/api/provider-intake` and creates a `ProviderApplication` plus a placeholder `User` (status `PENDING`, no password)
-- Admin reviews submissions at `/admin/applications` and clicks **Approve** to call `POST /api/admin/applications/[id]/approve` (Bearer-JWT auth)
+- Admin reviews submissions at `/admin/applications` and clicks **Approve** to call `POST /api/admin/applications/[id]/approve` (Bearer-JWT auth) or **Reject** to call `POST /api/admin/applications/[id]/reject` (sends a polite decline email and flips status to `REJECTED`; refuses to re-decide already-decided applications)
 - Approval generates a single-use setup token (32 random bytes, base64url), stores only the SHA-256 hash + 24h expiry on the user, marks the application `APPROVED`, and emails the provider a link to `/auth/set-password?token=...` via Resend
 - The set-password Server Action validates the token, bcrypts the password (cost 12), flips the user to `APPROVED`, and clears the token
 - NextAuth `authorize()` rejects any login where `user.status !== "APPROVED"` (defense in depth)

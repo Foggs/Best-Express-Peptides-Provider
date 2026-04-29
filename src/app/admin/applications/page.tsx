@@ -50,6 +50,7 @@ export default function AdminApplicationsPage() {
   const [sortField, setSortField] = useState<SortField>("date")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [approveError, setApproveError] = useState("")
   const [approveNotice, setApproveNotice] = useState("")
 
@@ -115,6 +116,37 @@ export default function AdminApplicationsPage() {
       setApproveError("Network error while approving application")
     } finally {
       setApprovingId(null)
+    }
+  }
+
+  async function rejectApplication(app: Application) {
+    if (!adminToken) return
+    if (!confirm(`Reject ${app.firstName} ${app.lastName} (${app.email})? They will be notified by email and the application will be marked REJECTED.`)) {
+      return
+    }
+    setRejectingId(app.id)
+    setApproveError("")
+    setApproveNotice("")
+    try {
+      const res = await fetch(`/api/admin/applications/${app.id}/reject`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) {
+        setApproveError(data.error || "Failed to reject application")
+      } else {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === app.id ? { ...a, status: "REJECTED" } : a)),
+        )
+        setApproveNotice(
+          data.warning ?? `Rejected ${app.email}. Notification email sent.`,
+        )
+      }
+    } catch {
+      setApproveError("Network error while rejecting application")
+    } finally {
+      setRejectingId(null)
     }
   }
 
@@ -235,13 +267,24 @@ export default function AdminApplicationsPage() {
                         </td>
                         <td className="px-4 py-3">
                           {app.status === "PENDING" ? (
-                            <Button
-                              size="sm"
-                              onClick={() => approveApplication(app, false)}
-                              disabled={approvingId === app.id}
-                            >
-                              {approvingId === app.id ? "Approving…" : "Approve"}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => approveApplication(app, false)}
+                                disabled={approvingId === app.id || rejectingId === app.id}
+                              >
+                                {approvingId === app.id ? "Approving…" : "Approve"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                onClick={() => rejectApplication(app)}
+                                disabled={approvingId === app.id || rejectingId === app.id}
+                              >
+                                {rejectingId === app.id ? "Rejecting…" : "Reject"}
+                              </Button>
+                            </div>
                           ) : app.status === "APPROVED" ? (
                             <Button
                               size="sm"
