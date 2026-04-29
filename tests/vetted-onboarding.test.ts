@@ -308,14 +308,22 @@ async function run() {
     generatedToken = t.token
     return t
   }
-  approveApplicationDeps.upsertUserWithSetupToken = async (params) => {
+  // Belt-and-suspenders: also stub the legacy non-transactional path so a
+  // regression that bypasses the atomic helper would still fail loudly.
+  let nonAtomicCalls = 0
+  approveApplicationDeps.upsertUserWithSetupToken = async () => {
+    nonAtomicCalls++
+    return { id: "u-new" } as any
+  }
+  approveApplicationDeps.setApplicationApproved = async () => {
+    nonAtomicCalls++
+    return { id: "app-ok" } as any
+  }
+  approveApplicationDeps.upsertUserAndApproveApplication = async (params) => {
     upsertedToken = params.setupTokenHash
     upsertedExpiry = params.setupTokenExpiresAt
-    return { id: "u-new", email: params.email } as any
-  }
-  approveApplicationDeps.setApplicationApproved = async (id) => {
-    appUpdateId = id
-    return { id } as any
+    appUpdateId = params.applicationId
+    return [{ id: "u-new" }, { id: params.applicationId }] as any
   }
   approveApplicationDeps.sendWelcomeEmail = async (data) => {
     emailedTo = data.email
@@ -329,7 +337,8 @@ async function run() {
   assert(j10.success === true, `body.success = true`)
   assert(upsertedToken === hashSetupToken(generatedToken!), `stored hash matches sha256(generated token)`)
   assert(upsertedExpiry instanceof Date && upsertedExpiry.getTime() > Date.now(), `expiry is in the future`)
-  assert(appUpdateId === "app-ok", `application marked APPROVED`)
+  assert(appUpdateId === "app-ok", `application marked APPROVED via atomic transaction`)
+  assert(nonAtomicCalls === 0, `first-time approval uses the atomic helper, not the legacy split writes`)
   assert(emailedTo === "new@clinic.com", `welcome email sent to applicant address`)
   assert(
     typeof emailedSetupUrl === "string" &&
@@ -346,8 +355,7 @@ async function run() {
   approveApplicationDeps.findApplication = async () =>
     ({ id: "app-w", email: "warn@clinic.com", firstName: "W", lastName: "Z", status: "PENDING" }) as any
   approveApplicationDeps.findUserByEmail = async () => null
-  approveApplicationDeps.upsertUserWithSetupToken = async () => ({ id: "u" }) as any
-  approveApplicationDeps.setApplicationApproved = async () => ({ id: "app-w" }) as any
+  approveApplicationDeps.upsertUserAndApproveApplication = async () => [] as any
   approveApplicationDeps.sendWelcomeEmail = async () => ({ success: false, error: "boom" })
   const r11 = await approvePOST(makeApproveReq("app-w"), ctx("app-w"))
   const j11 = await r11.json()

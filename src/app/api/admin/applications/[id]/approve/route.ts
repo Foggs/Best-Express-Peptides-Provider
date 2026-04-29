@@ -41,15 +41,26 @@ export async function POST(
     const { token, tokenHash, expiresAt } = approveApplicationDeps.generateSetupToken()
     const fullName = `${app.firstName} ${app.lastName}`.trim()
 
-    await approveApplicationDeps.upsertUserWithSetupToken({
-      email: app.email,
-      name: fullName,
-      setupTokenHash: tokenHash,
-      setupTokenExpiresAt: expiresAt,
-    })
-
-    if (!isReissue) {
-      await approveApplicationDeps.setApplicationApproved(id)
+    if (isReissue) {
+      // Reissue: application is already APPROVED — only refresh the user's
+      // setup token. Single write, no transaction needed.
+      await approveApplicationDeps.upsertUserWithSetupToken({
+        email: app.email,
+        name: fullName,
+        setupTokenHash: tokenHash,
+        setupTokenExpiresAt: expiresAt,
+      })
+    } else {
+      // First-time approval: upsert user with token AND mark application
+      // APPROVED in a single DB transaction so partial failures roll back
+      // and we never leave a token issued without the matching status flip.
+      await approveApplicationDeps.upsertUserAndApproveApplication({
+        email: app.email,
+        name: fullName,
+        setupTokenHash: tokenHash,
+        setupTokenExpiresAt: expiresAt,
+        applicationId: id,
+      })
     }
 
     const setupUrl = `${getSiteUrl().replace(/\/$/, "")}/auth/set-password?token=${encodeURIComponent(token)}`

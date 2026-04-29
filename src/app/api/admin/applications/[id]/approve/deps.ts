@@ -51,5 +51,39 @@ export const approveApplicationDeps = {
       data: { status: "APPROVED" },
     }),
 
+  // Atomic approval write: upsert the user with the new setup token AND
+  // mark the application APPROVED in a single transaction so a transient
+  // DB error cannot leave the user with a token while the application
+  // stays PENDING (or vice versa). Used on first-time approval only.
+  upsertUserAndApproveApplication: (params: {
+    email: string
+    name: string
+    setupTokenHash: string
+    setupTokenExpiresAt: Date
+    applicationId: string
+  }): Promise<unknown> =>
+    prisma.$transaction([
+      prisma.user.upsert({
+        where: { email: params.email },
+        create: {
+          email: params.email,
+          name: params.name,
+          status: "PENDING",
+          setupTokenHash: params.setupTokenHash,
+          setupTokenExpiresAt: params.setupTokenExpiresAt,
+        },
+        update: {
+          name: params.name,
+          status: "PENDING",
+          setupTokenHash: params.setupTokenHash,
+          setupTokenExpiresAt: params.setupTokenExpiresAt,
+        },
+      }),
+      prisma.providerApplication.update({
+        where: { id: params.applicationId },
+        data: { status: "APPROVED" },
+      }),
+    ]),
+
   sendWelcomeEmail: (data: ApprovalEmailData) => sendProviderWelcomeEmail(data),
 }
