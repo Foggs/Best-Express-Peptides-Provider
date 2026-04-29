@@ -83,8 +83,8 @@ Required environment variables:
 
 ## Commands
 - `npm run dev` - Start development server on port 5000
-- `npm run build` - Build for production
-- `npm run db:push` - Push Prisma schema to database
+- `npm run build` - Build for production. Runs `prisma generate` → `prisma migrate deploy` → `next build` → `npm run db:seed`, so deploys automatically apply any pending migrations before the seed step. Contributors only need to commit a new folder under `prisma/migrations/` for it to ship.
+- `npm run db:push` - Push Prisma schema to database (dev only — production uses `prisma migrate deploy` via the build)
 - `npm run db:seed` - Seed database with categories
 - `npm run test:e2e` - Run Playwright end-to-end tests
 
