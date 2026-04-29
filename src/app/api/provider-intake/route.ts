@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { providerIntakeDeps } from "./deps"
-import { sendProviderSignupEmail } from "@/lib/signupEmail"
 
 function req(msg: string) {
   return { required_error: msg, invalid_type_error: msg }
@@ -146,7 +145,7 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      const emailResult = await sendProviderSignupEmail({
+      const emailResult = await providerIntakeDeps.sendSignupEmail({
         firstName: data.firstName,
         lastName: data.lastName,
         suffix: data.suffix ?? null,

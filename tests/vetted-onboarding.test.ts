@@ -112,6 +112,7 @@ async function run() {
   let createdName = ""
   let lookupCalls = 0
   let intakeAppData: any = null
+  let signupEmailSends = 0
   providerIntakeDeps.rateLimit = async () => ({ success: true, remaining: 9 })
   providerIntakeDeps.saveFile = async () => "f.pdf"
   providerIntakeDeps.createApplication = async (data) => {
@@ -121,6 +122,11 @@ async function run() {
   providerIntakeDeps.findUserByEmail = async (email: string) => {
     lookupCalls++
     return null
+  }
+  // Stub outbound email so unit tests are deterministic and CI-safe.
+  providerIntakeDeps.sendSignupEmail = async () => {
+    signupEmailSends++
+    return { success: true } as any
   }
   providerIntakeDeps.createPendingUser = async (data) => {
     createdEmail = data.email
@@ -143,6 +149,10 @@ async function run() {
   assert(
     intakeAppData?.existingUserAtIntake === false,
     `application persisted with existingUserAtIntake=false for new email`,
+  )
+  assert(
+    signupEmailSends === 1,
+    `outbound signup email is dispatched (via stubbed dep, no network)`,
   )
 
   console.log("\n4. Intake skips user creation AND flags application when email already exists")

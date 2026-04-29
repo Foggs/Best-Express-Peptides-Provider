@@ -3,6 +3,7 @@ import { join } from "path"
 import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { rateLimit as _rateLimit } from "@/lib/rate-limit"
+import { sendProviderSignupEmail as _sendProviderSignupEmail } from "@/lib/signupEmail"
 import type { User } from "@prisma/client"
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "jpg", "jpeg", "png"])
@@ -41,4 +42,5 @@ export const providerIntakeDeps = {
         status: "PENDING",
       },
     }),
+  sendSignupEmail: _sendProviderSignupEmail as typeof _sendProviderSignupEmail,
 }

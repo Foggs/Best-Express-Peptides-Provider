@@ -43,12 +43,14 @@ async function main() {
       update: {
         password: hashedPassword,
         isAdmin: true,
+        status: 'APPROVED',
       },
       create: {
         email: adminEmail,
         name: 'Admin',
         password: hashedPassword,
         isAdmin: true,
+        status: 'APPROVED',
       },
     })
 
@@ -69,12 +71,14 @@ async function main() {
       update: {
         password: hashedTestPassword,
         isAdmin: false,
+        status: 'APPROVED',
       },
       create: {
         email: testEmail,
         name: 'Test User',
         password: hashedTestPassword,
         isAdmin: false,
+        status: 'APPROVED',
       },
     })
 
