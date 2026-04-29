@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import * as fs from "fs"
 import { POST as approvePOST } from "../src/app/api/admin/applications/[id]/approve/route"
 import { approveApplicationDeps } from "../src/app/api/admin/applications/[id]/approve/deps"
 import { POST as intakePOST } from "../src/app/api/provider-intake/route"
@@ -66,6 +67,27 @@ async function run() {
   console.log("\nTest suite: Vetted provider onboarding\n")
 
   // ──────────────────────────────────────────────────────────────────────────
+  // Regression guard: customer-self-register and OAuth users must be APPROVED
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log("0. /api/auth/register creates users with status: \"APPROVED\" (no PENDING regression)")
+  const registerSrc = fs.readFileSync(
+    "src/app/api/auth/register/route.ts",
+    "utf8",
+  )
+  assert(
+    /status:\s*["']APPROVED["']/.test(registerSrc),
+    `register route explicitly sets status: "APPROVED" so customer login is not blocked`,
+  )
+
+  console.log("\n0b. NextAuth events.createUser flips OAuth users to APPROVED")
+  const authSrc = fs.readFileSync("src/lib/auth.ts", "utf8")
+  assert(
+    /events:\s*\{[\s\S]*createUser/.test(authSrc) &&
+      /status:\s*["']APPROVED["']/.test(authSrc),
+    `auth.ts has events.createUser that marks OAuth users APPROVED`,
+  )
+
+  // ──────────────────────────────────────────────────────────────────────────
   // Token helpers
   // ──────────────────────────────────────────────────────────────────────────
   console.log("1. generateSetupToken returns base64url token + matching SHA-256 hash + 24h expiry")
@@ -89,9 +111,13 @@ async function run() {
   let createdEmail = ""
   let createdName = ""
   let lookupCalls = 0
+  let intakeAppData: any = null
   providerIntakeDeps.rateLimit = async () => ({ success: true, remaining: 9 })
   providerIntakeDeps.saveFile = async () => "f.pdf"
-  providerIntakeDeps.createApplication = async () => ({ id: "app-new" })
+  providerIntakeDeps.createApplication = async (data) => {
+    intakeAppData = data
+    return { id: "app-new" }
+  }
   providerIntakeDeps.findUserByEmail = async (email: string) => {
     lookupCalls++
     return null
@@ -114,9 +140,14 @@ async function run() {
     createdEmail === "jane@clinic.com" && createdName === "Jane Smith",
     `createPendingUser called with normalized email + full name (got "${createdEmail}", "${createdName}")`,
   )
+  assert(
+    intakeAppData?.existingUserAtIntake === false,
+    `application persisted with existingUserAtIntake=false for new email`,
+  )
 
-  console.log("\n4. Intake skips user creation when email already exists")
+  console.log("\n4. Intake skips user creation AND flags application when email already exists")
   let createCalls = 0
+  intakeAppData = null
   providerIntakeDeps.findUserByEmail = async () =>
     ({ id: "u-existing", email: "jane@clinic.com", status: "APPROVED" }) as any
   providerIntakeDeps.createPendingUser = async () => {
@@ -131,6 +162,10 @@ async function run() {
   )
   assert(r4.status === 201, `intake still returns 201 when user exists (got ${r4.status})`)
   assert(createCalls === 0, `createPendingUser NOT called`)
+  assert(
+    intakeAppData?.existingUserAtIntake === true,
+    `application persisted with existingUserAtIntake=true for existing email (admin signal)`,
+  )
 
   console.log("\n5. Intake still succeeds even if pending-user creation throws (best-effort)")
   providerIntakeDeps.findUserByEmail = async () => null
@@ -157,11 +192,31 @@ async function run() {
   const r7 = await approvePOST(makeApproveReq("missing"), ctx("missing"))
   assert(r7.status === 404, `missing app → 404 (got ${r7.status})`)
 
-  console.log("\n8. Approve route returns 409 when already approved")
+  console.log("\n8. Approve route ALLOWS reissue for APPROVED app whose user has no password yet")
+  let reissueAppMarkApproved = 0
+  let reissueUpsertCalls = 0
+  let reissueEmailCalls = 0
   approveApplicationDeps.findApplication = async () =>
     ({ id: "a", email: "x@y.com", firstName: "X", lastName: "Y", status: "APPROVED" }) as any
+  approveApplicationDeps.findUserByEmail = async () =>
+    ({ id: "u", email: "x@y.com", password: null, status: "PENDING" }) as any
+  approveApplicationDeps.upsertUserWithSetupToken = async () => {
+    reissueUpsertCalls++
+    return { id: "u" } as any
+  }
+  approveApplicationDeps.setApplicationApproved = async () => {
+    reissueAppMarkApproved++
+    return { id: "a" } as any
+  }
+  approveApplicationDeps.sendWelcomeEmail = async () => {
+    reissueEmailCalls++
+    return { success: true }
+  }
   const r8 = await approvePOST(makeApproveReq("a"), ctx("a"))
-  assert(r8.status === 409, `approved app → 409 (got ${r8.status})`)
+  assert(r8.status === 200, `reissue → 200 (got ${r8.status})`)
+  assert(reissueUpsertCalls === 1, `fresh token issued (upsert called once)`)
+  assert(reissueEmailCalls === 1, `welcome email re-sent`)
+  assert(reissueAppMarkApproved === 0, `application status NOT touched on reissue (already APPROVED)`)
 
   console.log("\n9. Approve route returns 409 when user already has a password")
   approveApplicationDeps.findApplication = async () =>
@@ -249,86 +304,112 @@ async function run() {
     token: "",
     password: "longenough123",
     confirmPassword: "longenough123",
-    deps: stubFinder(null),
+    deps: stubDeps(0),
   })
   assert(!r13.ok, "empty token → not ok")
 
   console.log("\n14. consumeSetupToken rejects short password")
   const r14 = await consumeSetupToken({
     token: "abc",
-    password: "short",
-    confirmPassword: "short",
-    deps: stubFinder(null),
+    password: "short1",
+    confirmPassword: "short1",
+    deps: stubDeps(1),
   })
   assert(!r14.ok && /8 characters/i.test((r14 as any).error), "short password → 8-char error")
+
+  console.log("\n14b. consumeSetupToken rejects password missing letters (complexity)")
+  const r14b = await consumeSetupToken({
+    token: "abc",
+    password: "12345678",
+    confirmPassword: "12345678",
+    deps: stubDeps(1),
+  })
+  assert(!r14b.ok && /letter/i.test((r14b as any).error), "all-digits → letter error")
+
+  console.log("\n14c. consumeSetupToken rejects password missing numbers (complexity)")
+  const r14c = await consumeSetupToken({
+    token: "abc",
+    password: "abcdefgh",
+    confirmPassword: "abcdefgh",
+    deps: stubDeps(1),
+  })
+  assert(!r14c.ok && /number/i.test((r14c as any).error), "all-letters → number error")
 
   console.log("\n15. consumeSetupToken rejects mismatched passwords")
   const r15 = await consumeSetupToken({
     token: "abc",
     password: "longenough123",
     confirmPassword: "different1234",
-    deps: stubFinder(null),
+    deps: stubDeps(1),
   })
   assert(!r15.ok && /do not match/i.test((r15 as any).error), "mismatch → match error")
 
-  console.log("\n16. consumeSetupToken rejects unknown token")
+  console.log("\n16. consumeSetupToken rejects unknown / consumed token (atomic update returns 0)")
   const r16 = await consumeSetupToken({
     token: "unknown",
     password: "longenough123",
     confirmPassword: "longenough123",
-    deps: stubFinder(null),
+    deps: stubDeps(0),
   })
-  assert(!r16.ok && /invalid|already been used/i.test((r16 as any).error), "unknown → invalid")
+  assert(!r16.ok && /invalid|expired|already been used/i.test((r16 as any).error), "0 rows → invalid/expired")
 
-  console.log("\n17. consumeSetupToken rejects expired token")
-  const expiredUser = {
-    id: "u-exp",
-    setupTokenExpiresAt: new Date(Date.now() - 60_000),
-  }
+  console.log("\n17. consumeSetupToken happy path: atomic update succeeds (1 row)")
+  let consumeArgs: { tokenHash: string; passwordHash: string; now: Date } | undefined
   const r17 = await consumeSetupToken({
-    token: "any",
-    password: "longenough123",
-    confirmPassword: "longenough123",
-    deps: stubFinder(expiredUser as any),
-  })
-  assert(!r17.ok && /expired/i.test((r17 as any).error), "expired → expired error")
-
-  console.log("\n18. consumeSetupToken happy path: hashes password, clears token, sets APPROVED")
-  let updatedArg: { userId: string; passwordHash: string } | undefined
-  const validUser = {
-    id: "u-ok",
-    setupTokenExpiresAt: new Date(Date.now() + 60_000),
-  }
-  const r18 = await consumeSetupToken({
     token: "valid-token",
-    password: "supersecret123",
-    confirmPassword: "supersecret123",
+    password: "supersecret1",
+    confirmPassword: "supersecret1",
     deps: {
       hashSetupToken: (s: string) => `H(${s})`,
-      findUserByTokenHash: async (h: string) => {
-        assert(h === "H(valid-token)", `looked up by hashed token (h=${h})`)
-        return validUser as any
-      },
+      findUserByTokenHash: async () => null,
       hashPassword: async (pw: string) => `BCRYPT(${pw})`,
-      consumeTokenAndSetPassword: async (params) => {
-        updatedArg = params
-        return {} as any
+      consumeTokenAtomic: async (args) => {
+        consumeArgs = args
+        return 1
       },
     },
   })
-  assert(r18.ok, "valid → ok")
-  assert(
-    updatedArg?.userId === "u-ok" && updatedArg?.passwordHash === "BCRYPT(supersecret123)",
-    "consumeTokenAndSetPassword called with hashed password and correct user id",
-  )
+  assert(r17.ok, "valid → ok")
+  assert(consumeArgs?.tokenHash === "H(valid-token)", "consumeTokenAtomic called with hashed token")
+  assert(consumeArgs?.passwordHash === "BCRYPT(supersecret1)", "consumeTokenAtomic called with bcrypt password hash")
+  assert(consumeArgs?.now instanceof Date, "consumeTokenAtomic called with current time for expiry check")
+
+  console.log("\n18. consumeSetupToken concurrent replay: only first request wins (atomic)")
+  // Simulate two parallel requests racing on the same token. The atomic
+  // update returns 1 to the winner and 0 to the loser; no double-set possible.
+  let calls = 0
+  const racingDeps = {
+    hashSetupToken: (s: string) => `H(${s})`,
+    findUserByTokenHash: async () => null,
+    hashPassword: async (pw: string) => `BCRYPT(${pw})`,
+    consumeTokenAtomic: async () => {
+      calls++
+      return calls === 1 ? 1 : 0
+    },
+  }
+  const [a, b] = await Promise.all([
+    consumeSetupToken({
+      token: "race-token",
+      password: "longenough123",
+      confirmPassword: "longenough123",
+      deps: racingDeps,
+    }),
+    consumeSetupToken({
+      token: "race-token",
+      password: "longenough123",
+      confirmPassword: "longenough123",
+      deps: racingDeps,
+    }),
+  ])
+  assert(a.ok !== b.ok, "exactly one of two concurrent requests succeeds")
 }
 
-function stubFinder(user: any) {
+function stubDeps(updatedRows: number) {
   return {
     hashSetupToken: (s: string) => `H(${s})`,
-    findUserByTokenHash: async () => user,
+    findUserByTokenHash: async () => null,
     hashPassword: async (pw: string) => `BCRYPT(${pw})`,
-    consumeTokenAndSetPassword: async () => ({}) as any,
+    consumeTokenAtomic: async () => updatedRows,
   }
 }
 

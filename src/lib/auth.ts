@@ -60,6 +60,22 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin",
   },
+  events: {
+    // PrismaAdapter creates User rows for OAuth (e.g. Google) sign-ins. Those
+    // rows would otherwise inherit the schema-level PENDING default and be
+    // locked out by the authorize() / OAuth signIn gate. OAuth users are
+    // intentionally trusted as APPROVED on creation.
+    async createUser({ user }) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: "APPROVED" },
+        })
+      } catch (err) {
+        console.error("Failed to mark OAuth-created user APPROVED:", err)
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

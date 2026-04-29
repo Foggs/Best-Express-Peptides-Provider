@@ -206,6 +206,7 @@ model ProviderApplication {
   businessLicensePath     String?
   referredBy              String
   comments                String?           @db.Text
+  existingUserAtIntake    Boolean           @default(false)
   status                  ApplicationStatus @default(PENDING)
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt

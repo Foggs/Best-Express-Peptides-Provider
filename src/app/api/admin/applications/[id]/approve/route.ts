@@ -24,13 +24,10 @@ export async function POST(
       return NextResponse.json({ error: "Application not found" }, { status: 404 })
     }
 
-    if (app.status === "APPROVED") {
-      return NextResponse.json(
-        { error: "Application has already been approved" },
-        { status: 409 },
-      )
-    }
-
+    // Allow re-triggering approval for already-APPROVED applications: the admin
+    // may need to reissue a fresh setup link if the previous one expired or the
+    // welcome email was lost. Re-issuing is blocked once the provider has
+    // actually set their password.
     const existingUser = await approveApplicationDeps.findUserByEmail(app.email)
     if (existingUser?.password) {
       return NextResponse.json(
@@ -38,6 +35,8 @@ export async function POST(
         { status: 409 },
       )
     }
+
+    const isReissue = app.status === "APPROVED"
 
     const { token, tokenHash, expiresAt } = approveApplicationDeps.generateSetupToken()
     const fullName = `${app.firstName} ${app.lastName}`.trim()
@@ -49,7 +48,9 @@ export async function POST(
       setupTokenExpiresAt: expiresAt,
     })
 
-    await approveApplicationDeps.setApplicationApproved(id)
+    if (!isReissue) {
+      await approveApplicationDeps.setApplicationApproved(id)
+    }
 
     const setupUrl = `${getSiteUrl().replace(/\/$/, "")}/auth/set-password?token=${encodeURIComponent(token)}`
 

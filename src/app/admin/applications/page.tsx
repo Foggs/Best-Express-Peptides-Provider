@@ -20,6 +20,7 @@ interface Application {
   hasResellerLicense: string
   referredBy: string
   status: "PENDING" | "APPROVED" | "REJECTED"
+  existingUserAtIntake: boolean
   createdAt: string
 }
 
@@ -82,9 +83,10 @@ export default function AdminApplicationsPage() {
     else { setSortField(field); setSortDir("asc") }
   }
 
-  async function approveApplication(app: Application) {
+  async function approveApplication(app: Application, isReissue: boolean) {
     if (!adminToken) return
-    if (!confirm(`Approve ${app.firstName} ${app.lastName} (${app.email})? A welcome email with a password setup link will be sent.`)) {
+    const verb = isReissue ? "Reissue setup link for" : "Approve"
+    if (!confirm(`${verb} ${app.firstName} ${app.lastName} (${app.email})? A fresh password setup email will be sent and any previous setup link will be invalidated.`)) {
       return
     }
     setApprovingId(app.id)
@@ -103,7 +105,10 @@ export default function AdminApplicationsPage() {
           prev.map((a) => (a.id === app.id ? { ...a, status: "APPROVED" } : a)),
         )
         setApproveNotice(
-          data.warning ?? `Approved ${app.email}. Welcome email sent.`,
+          data.warning ??
+            (isReissue
+              ? `Fresh setup link sent to ${app.email}.`
+              : `Approved ${app.email}. Welcome email sent.`),
         )
       }
     } catch {
@@ -207,7 +212,17 @@ export default function AdminApplicationsPage() {
                           {app.firstName} {app.lastName}
                         </td>
                         <td className="px-4 py-3 text-gray-600">{app.companyName}</td>
-                        <td className="px-4 py-3 text-gray-600">{app.email}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {app.email}
+                          {app.existingUserAtIntake && (
+                            <span
+                              className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border bg-amber-50 text-amber-800 border-amber-200"
+                              title="An account with this email already existed when this application was submitted. Verify the applicant's identity before approving."
+                            >
+                              account exists
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-gray-600 font-mono text-xs">{app.npiNumber}</td>
                         <td className="px-4 py-3 text-gray-600">{app.state}</td>
                         <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
@@ -222,10 +237,20 @@ export default function AdminApplicationsPage() {
                           {app.status === "PENDING" ? (
                             <Button
                               size="sm"
-                              onClick={() => approveApplication(app)}
+                              onClick={() => approveApplication(app, false)}
                               disabled={approvingId === app.id}
                             >
                               {approvingId === app.id ? "Approving…" : "Approve"}
+                            </Button>
+                          ) : app.status === "APPROVED" ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => approveApplication(app, true)}
+                              disabled={approvingId === app.id}
+                              title="Generate a fresh setup link and resend the welcome email"
+                            >
+                              {approvingId === app.id ? "Sending…" : "Reissue link"}
                             </Button>
                           ) : (
                             <span className="text-xs text-gray-400">—</span>

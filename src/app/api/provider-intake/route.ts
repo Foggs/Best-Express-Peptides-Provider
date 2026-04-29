@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const existingUser = await providerIntakeDeps.findUserByEmail(data.email)
+    const existingUserAtIntake = Boolean(existingUser)
     if (!existingUser) {
       try {
         await providerIntakeDeps.createPendingUser({
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
     }
 
     await providerIntakeDeps.createApplication({
+      existingUserAtIntake,
       firstName: data.firstName,
       lastName: data.lastName,
       suffix: data.suffix ?? null,

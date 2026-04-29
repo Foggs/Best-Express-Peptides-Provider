@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         hasResellerLicense: true,
         referredBy: true,
         status: true,
+        existingUserAtIntake: true,
         createdAt: true,
       },
     })
