@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from "next/server"
+import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth"
+import { approveApplicationDeps } from "./deps"
+
+function getSiteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://bestexpresspeptides.com"
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const auth = verifyAdminAuth(request)
+  if (!auth.valid) return createUnauthorizedResponse()
+
+  const { id } = await context.params
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "Application id is required" }, { status: 400 })
+  }
+
+  try {
+    const app = await approveApplicationDeps.findApplication(id)
+    if (!app) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 })
+    }
+
+    if (app.status === "APPROVED") {
+      return NextResponse.json(
+        { error: "Application has already been approved" },
+        { status: 409 },
+      )
+    }
+
+    const existingUser = await approveApplicationDeps.findUserByEmail(app.email)
+    if (existingUser?.password) {
+      return NextResponse.json(
+        { error: "An account with this email already has a password set" },
+        { status: 409 },
+      )
+    }
+
+    const { token, tokenHash, expiresAt } = approveApplicationDeps.generateSetupToken()
+    const fullName = `${app.firstName} ${app.lastName}`.trim()
+
+    await approveApplicationDeps.upsertUserWithSetupToken({
+      email: app.email,
+      name: fullName,
+      setupTokenHash: tokenHash,
+      setupTokenExpiresAt: expiresAt,
+    })
+
+    await approveApplicationDeps.setApplicationApproved(id)
+
+    const setupUrl = `${getSiteUrl().replace(/\/$/, "")}/auth/set-password?token=${encodeURIComponent(token)}`
+
+    const emailResult = await approveApplicationDeps.sendWelcomeEmail({
+      email: app.email,
+      name: fullName,
+      setupUrl,
+    })
+
+    if (!emailResult.success) {
+      console.error("Welcome email failed for application", id, emailResult.error)
+      return NextResponse.json(
+        {
+          success: true,
+          warning: "Application approved, but the welcome email could not be sent.",
+        },
+        { status: 200 },
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error("Application approval error:", err)
+    return NextResponse.json({ error: "Failed to approve application" }, { status: 500 })
+  }
+}

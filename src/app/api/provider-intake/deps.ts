@@ -3,6 +3,7 @@ import { join } from "path"
 import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { rateLimit as _rateLimit } from "@/lib/rate-limit"
+import type { User } from "@prisma/client"
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "jpg", "jpeg", "png"])
 const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -30,4 +31,14 @@ export const providerIntakeDeps = {
   saveFile: _saveFile as (file: File) => Promise<string>,
   createApplication: (data: ApplicationData): Promise<unknown> =>
     prisma.providerApplication.create({ data }),
+  findUserByEmail: (email: string): Promise<User | null> =>
+    prisma.user.findUnique({ where: { email } }),
+  createPendingUser: (data: { email: string; name: string }): Promise<User> =>
+    prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        status: "PENDING",
+      },
+    }),
 }

@@ -48,6 +48,9 @@ export default function AdminApplicationsPage() {
   const [error, setError] = useState("")
   const [sortField, setSortField] = useState<SortField>("date")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [approveError, setApproveError] = useState("")
+  const [approveNotice, setApproveNotice] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -77,6 +80,37 @@ export default function AdminApplicationsPage() {
   function toggleSort(field: SortField) {
     if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"))
     else { setSortField(field); setSortDir("asc") }
+  }
+
+  async function approveApplication(app: Application) {
+    if (!adminToken) return
+    if (!confirm(`Approve ${app.firstName} ${app.lastName} (${app.email})? A welcome email with a password setup link will be sent.`)) {
+      return
+    }
+    setApprovingId(app.id)
+    setApproveError("")
+    setApproveNotice("")
+    try {
+      const res = await fetch(`/api/admin/applications/${app.id}/approve`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) {
+        setApproveError(data.error || "Failed to approve application")
+      } else {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === app.id ? { ...a, status: "APPROVED" } : a)),
+        )
+        setApproveNotice(
+          data.warning ?? `Approved ${app.email}. Welcome email sent.`,
+        )
+      }
+    } catch {
+      setApproveError("Network error while approving application")
+    } finally {
+      setApprovingId(null)
+    }
   }
 
   const sorted = [...applications].sort((a, b) => {
@@ -126,6 +160,16 @@ export default function AdminApplicationsPage() {
             {error}
           </div>
         )}
+        {approveError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-md mb-6">
+            {approveError}
+          </div>
+        )}
+        {approveNotice && (
+          <div className="bg-green-50 border border-green-200 text-green-700 text-sm p-3 rounded-md mb-6">
+            {approveNotice}
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -153,6 +197,7 @@ export default function AdminApplicationsPage() {
                       <th className="px-4 py-3 text-left font-semibold text-gray-700">State</th>
                       <th className="px-4 py-3 text-left"><SortButton field="date" label="Submitted" /></th>
                       <th className="px-4 py-3 text-left"><SortButton field="status" label="Status" /></th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -172,6 +217,19 @@ export default function AdminApplicationsPage() {
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[app.status] ?? ""}`}>
                             {app.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {app.status === "PENDING" ? (
+                            <Button
+                              size="sm"
+                              onClick={() => approveApplication(app)}
+                              disabled={approvingId === app.id}
+                            >
+                              {approvingId === app.id ? "Approving…" : "Approve"}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -15,6 +15,7 @@ export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const passwordSet = searchParams.get("passwordSet") === "1"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -93,6 +94,11 @@ export default function SignInPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {passwordSet && !error && (
+                <div className="bg-green-50 border border-green-200 text-green-700 text-sm p-3 rounded-md">
+                  Your password has been set. Please sign in below.
+                </div>
+              )}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-md">
                   {error}

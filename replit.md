@@ -9,7 +9,7 @@ A production-ready e-commerce website for selling research peptides built with N
 - **State Management**: Zustand (cart persistence)
 - **Database**: PostgreSQL with Prisma ORM (orders/users only)
 - **Product Data**: Google Sheets (single source of truth) with in-memory TTL cache
-- **Authentication**: NextAuth.js (email/password + Google)
+- **Authentication**: NextAuth.js (email/password + Google) with vetted-provider onboarding gate
 - **Order Notifications**: Resend (emails order details to admin)
 - **Payments**: Stripe Checkout (currently disabled, kept for future re-enablement)
 - **Validation**: Zod, React Hook Form
@@ -22,6 +22,13 @@ A production-ready e-commerce website for selling research peptides built with N
 - `src/lib/productCache.ts` provides in-memory caching with 5-minute TTL
 - Admin can force-refresh cache from the admin dashboard
 - Prisma/DB is NOT used for products — only for users, orders, sessions, coupons, categories
+
+### Vetted Provider Onboarding
+- Provider intake at `/auth/signup` posts to `/api/provider-intake` and creates a `ProviderApplication` plus a placeholder `User` (status `PENDING`, no password)
+- Admin reviews submissions at `/admin/applications` and clicks **Approve** to call `POST /api/admin/applications/[id]/approve` (Bearer-JWT auth)
+- Approval generates a single-use setup token (32 random bytes, base64url), stores only the SHA-256 hash + 24h expiry on the user, marks the application `APPROVED`, and emails the provider a link to `/auth/set-password?token=...` via Resend
+- The set-password Server Action validates the token, bcrypts the password (cost 12), flips the user to `APPROVED`, and clears the token
+- NextAuth `authorize()` rejects any login where `user.status !== "APPROVED"` (defense in depth)
 
 ### Checkout Flow
 - Customer fills out shipping form and clicks "Submit Order"
