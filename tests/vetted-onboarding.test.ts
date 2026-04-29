@@ -218,6 +218,37 @@ async function run() {
   assert(reissueEmailCalls === 1, `welcome email re-sent`)
   assert(reissueAppMarkApproved === 0, `application status NOT touched on reissue (already APPROVED)`)
 
+  console.log("\n8b. Approve route ALSO covers OAuth edge: APPROVED user with no password → fresh link issued")
+  // OAuth-created user has status=APPROVED, password=null. Admin approves
+  // their provider application → we must issue a setup link. The approve
+  // route should treat this as a reissue (no application status change),
+  // and the upsert MUST also reset status to PENDING so the atomic consume
+  // in /auth/set-password (which filters status=PENDING) can succeed.
+  let oauthUpserts = 0
+  approveApplicationDeps.findApplication = async () =>
+    ({ id: "a", email: "x@y.com", firstName: "X", lastName: "Y", status: "APPROVED" }) as any
+  approveApplicationDeps.findUserByEmail = async () =>
+    ({ id: "u", email: "x@y.com", password: null, status: "APPROVED" }) as any
+  approveApplicationDeps.upsertUserWithSetupToken = async () => {
+    oauthUpserts++
+    return { id: "u" } as any
+  }
+  const r8b = await approvePOST(makeApproveReq("a"), ctx("a"))
+  assert(r8b.status === 200, `OAuth-APPROVED + no-password reissue → 200 (got ${r8b.status})`)
+  assert(oauthUpserts === 1, `setup token issued for OAuth user`)
+
+  // Lock in that the production upsert SQL itself includes status:"PENDING"
+  // in its update branch (so the consume can actually succeed for this user).
+  const approveDepsSrc = fs.readFileSync(
+    "src/app/api/admin/applications/[id]/approve/deps.ts",
+    "utf8",
+  )
+  const updateMatch = approveDepsSrc.match(/update:\s*\{[\s\S]*?\},/)
+  assert(
+    !!updateMatch && /status:\s*["']PENDING["']/.test(updateMatch[0]),
+    `upsert update branch resets status to PENDING (lets set-password consume succeed)`,
+  )
+
   console.log("\n9. Approve route returns 409 when user already has a password")
   approveApplicationDeps.findApplication = async () =>
     ({ id: "a", email: "x@y.com", firstName: "X", lastName: "Y", status: "PENDING" }) as any

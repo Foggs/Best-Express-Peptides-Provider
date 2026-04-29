@@ -35,6 +35,11 @@ export const approveApplicationDeps = {
       },
       update: {
         name: params.name,
+        // Force status back to PENDING so the atomic consume in
+        // /auth/set-password (which requires status=PENDING) succeeds.
+        // Safe because the caller has already verified password === null
+        // — we never downgrade a real signed-up user.
+        status: "PENDING",
         setupTokenHash: params.setupTokenHash,
         setupTokenExpiresAt: params.setupTokenExpiresAt,
       },
