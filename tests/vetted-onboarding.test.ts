@@ -107,17 +107,25 @@ async function run() {
   // ──────────────────────────────────────────────────────────────────────────
   // Intake creates PENDING user when email is new
   // ──────────────────────────────────────────────────────────────────────────
-  console.log("\n3. Intake creates PENDING user when email does not yet exist")
+  console.log("\n3. Intake atomically creates PENDING user + application when email does not yet exist")
   let createdEmail = ""
   let createdName = ""
   let lookupCalls = 0
   let intakeAppData: any = null
   let signupEmailSends = 0
+  let standaloneAppCreates = 0
   providerIntakeDeps.rateLimit = async () => ({ success: true, remaining: 9 })
   providerIntakeDeps.saveFile = async () => "f.pdf"
   providerIntakeDeps.createApplication = async (data) => {
+    standaloneAppCreates++
     intakeAppData = data
     return { id: "app-new" }
+  }
+  providerIntakeDeps.createApplicationAndPendingUser = async (params) => {
+    intakeAppData = params.application
+    createdEmail = params.user.email
+    createdName = params.user.name
+    return [{ id: "u-new" }, { id: "app-new" }] as any
   }
   providerIntakeDeps.findUserByEmail = async (email: string) => {
     lookupCalls++
@@ -154,15 +162,25 @@ async function run() {
     signupEmailSends === 1,
     `outbound signup email is dispatched (via stubbed dep, no network)`,
   )
+  assert(
+    standaloneAppCreates === 0,
+    `new-email branch uses transactional createApplicationAndPendingUser (not standalone createApplication)`,
+  )
 
   console.log("\n4. Intake skips user creation AND flags application when email already exists")
   let createCalls = 0
+  let txCalls = 0
   intakeAppData = null
+  standaloneAppCreates = 0
   providerIntakeDeps.findUserByEmail = async () =>
     ({ id: "u-existing", email: "jane@clinic.com", status: "APPROVED" }) as any
   providerIntakeDeps.createPendingUser = async () => {
     createCalls++
     return {} as any
+  }
+  providerIntakeDeps.createApplicationAndPendingUser = async () => {
+    txCalls++
+    return [] as any
   }
   const r4 = await intakePOST(
     new NextRequest("http://localhost/api/provider-intake", {
@@ -176,10 +194,17 @@ async function run() {
     intakeAppData?.existingUserAtIntake === true,
     `application persisted with existingUserAtIntake=true for existing email (admin signal)`,
   )
+  assert(
+    txCalls === 0 && standaloneAppCreates === 1,
+    `existing-user branch uses standalone createApplication (no transaction needed)`,
+  )
 
-  console.log("\n5. Intake still succeeds even if pending-user creation throws (best-effort)")
+  console.log("\n5. Intake fails loudly (500) when the atomic write throws — no orphaned application")
+  // New contract: createApplicationAndPendingUser is a transaction. If it
+  // fails, neither the User nor the ProviderApplication row exists, and
+  // the caller MUST get an error so they know to retry. No silent 201.
   providerIntakeDeps.findUserByEmail = async () => null
-  providerIntakeDeps.createPendingUser = async () => {
+  providerIntakeDeps.createApplicationAndPendingUser = async () => {
     throw new Error("DB_ERROR")
   }
   const r5 = await intakePOST(
@@ -188,7 +213,7 @@ async function run() {
       body: makeIntakeForm(),
     }),
   )
-  assert(r5.status === 201, `intake returns 201 even if user creation fails (got ${r5.status})`)
+  assert(r5.status === 500, `tx failure → 500 (got ${r5.status})`)
 
   // ──────────────────────────────────────────────────────────────────────────
   // Approve route

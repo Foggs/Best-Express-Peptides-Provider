@@ -42,5 +42,18 @@ export const providerIntakeDeps = {
         status: "PENDING",
       },
     }),
+  // Atomic combined write so a transient DB failure cannot leave an
+  // application persisted without its placeholder user (or vice versa).
+  // Used only on the new-email branch of intake.
+  createApplicationAndPendingUser: (params: {
+    user: { email: string; name: string }
+    application: ApplicationData
+  }): Promise<unknown> =>
+    prisma.$transaction([
+      prisma.user.create({
+        data: { email: params.user.email, name: params.user.name, status: "PENDING" },
+      }),
+      prisma.providerApplication.create({ data: params.application }),
+    ]),
   sendSignupEmail: _sendProviderSignupEmail as typeof _sendProviderSignupEmail,
 }

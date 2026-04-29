@@ -109,18 +109,8 @@ export async function POST(request: NextRequest) {
   try {
     const existingUser = await providerIntakeDeps.findUserByEmail(data.email)
     const existingUserAtIntake = Boolean(existingUser)
-    if (!existingUser) {
-      try {
-        await providerIntakeDeps.createPendingUser({
-          email: data.email,
-          name: `${data.firstName} ${data.lastName}`.trim(),
-        })
-      } catch (userErr) {
-        console.error("Failed to create pending user during intake:", userErr)
-      }
-    }
 
-    await providerIntakeDeps.createApplication({
+    const applicationData = {
       existingUserAtIntake,
       firstName: data.firstName,
       lastName: data.lastName,
@@ -142,7 +132,21 @@ export async function POST(request: NextRequest) {
       businessLicensePath: businessLicensePath ?? null,
       referredBy: data.referredBy,
       comments: data.comments ?? null,
-    })
+    }
+
+    if (existingUser) {
+      // No placeholder user needed — application stands alone.
+      await providerIntakeDeps.createApplication(applicationData)
+    } else {
+      // Atomic: either both rows land or neither does.
+      await providerIntakeDeps.createApplicationAndPendingUser({
+        user: {
+          email: data.email,
+          name: `${data.firstName} ${data.lastName}`.trim(),
+        },
+        application: applicationData,
+      })
+    }
 
     try {
       const emailResult = await providerIntakeDeps.sendSignupEmail({
