@@ -78,16 +78,12 @@ async function run() {
   console.log("\nTest suite: Vetted provider onboarding\n")
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Regression guard: customer-self-register and OAuth users must be APPROVED
+  // Regression guard: no self-register bypass; OAuth users must be APPROVED
   // ──────────────────────────────────────────────────────────────────────────
-  console.log("0. /api/auth/register creates users with status: \"APPROVED\" (no PENDING regression)")
-  const registerSrc = fs.readFileSync(
-    "src/app/api/auth/register/route.ts",
-    "utf8",
-  )
+  console.log("0. /api/auth/register bypass route is removed (vetted-provider gate enforced)")
   assert(
-    /status:\s*["']APPROVED["']/.test(registerSrc),
-    `register route explicitly sets status: "APPROVED" so customer login is not blocked`,
+    !fs.existsSync("src/app/api/auth/register/route.ts"),
+    `register route is removed so nobody can self-mint an APPROVED account outside provider vetting`,
   )
 
   console.log("\n0b. NextAuth events.createUser flips OAuth users to APPROVED")

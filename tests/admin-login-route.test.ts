@@ -12,11 +12,13 @@ function assert(condition: boolean, msg: string) {
   else { console.error(`  ✗ FAIL: ${msg}`); failed++ }
 }
 
-function makeReq(body: Record<string, unknown>): NextRequest {
+function makeReq(body: Record<string, unknown>, ip?: string): NextRequest {
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (ip) headers["x-forwarded-for"] = ip
   return new NextRequest("http://localhost/api/admin/login", {
     method: "POST",
     body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers,
   })
 }
 
@@ -103,6 +105,39 @@ async function run() {
 
   assert(r6.status === 401, `OAuth-only: status 401 (got ${r6.status})`)
   assert(!("token" in j6), `OAuth-only: no token in response`)
+
+  // ── 7. Brute-force is throttled: repeated failures from one IP → 429 ───
+  // Uses an isolated client IP so it does not consume the shared "unknown"
+  // bucket used by the rejection cases above. The limiter defaults to 10
+  // failure points per IP, so the 11th attempt must be blocked.
+  console.log("\n7. Repeated failed admin logins from one IP eventually return 429")
+  ;(prisma.user as any).findUnique = async () => baseAdmin
+  const ATTACKER_IP = "203.0.113.50"
+  let sawBlock = false
+  let blockedResponse: Response | null = null
+  for (let i = 0; i < 15; i++) {
+    const r = await POST(makeReq({ email: baseAdmin.email, password: "WrongPass!" }, ATTACKER_IP))
+    if (r.status === 429) {
+      sawBlock = true
+      blockedResponse = r
+      break
+    }
+  }
+  assert(sawBlock, `brute-force eventually returns 429 within the failure budget`)
+  if (blockedResponse) {
+    const jb = await blockedResponse.json()
+    assert(typeof jb.error === "string", `429 response carries an error message`)
+    assert(
+      blockedResponse.headers.has("Retry-After"),
+      `429 response includes a Retry-After header`,
+    )
+  }
+
+  // ── 8. Limiter is per-IP: a fresh IP with valid creds still succeeds ───
+  console.log("\n8. A different IP with valid credentials is unaffected by another IP's lockout")
+  ;(prisma.user as any).findUnique = async () => baseAdmin
+  const r8 = await POST(makeReq({ email: baseAdmin.email, password: PLAIN }, "203.0.113.99"))
+  assert(r8.status === 200, `fresh IP valid login: status 200 (got ${r8.status})`)
 }
 
 run()
