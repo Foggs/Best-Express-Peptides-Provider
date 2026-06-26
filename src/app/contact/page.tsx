@@ -24,7 +24,9 @@ const contactSchema = z.object({
     .trim()
     .min(1, "Message is required")
     .max(5000, "Message is too long"),
-  website: z.string().max(0).optional(),
+  // Honeypot — kept unvalidated on the client so autofill never blocks a real
+  // user; the server is the sole enforcement point for spam rejection.
+  company_fax: z.string().optional(),
 })
 
 type ContactFormValues = z.infer<typeof contactSchema>
@@ -125,13 +127,13 @@ export default function ContactPage() {
               <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
                   <div className="absolute left-[-9999px] top-[-9999px]" aria-hidden="true">
-                    <label htmlFor="website">Leave this field empty</label>
+                    <label htmlFor="company_fax">Leave this field empty</label>
                     <input
-                      id="website"
+                      id="company_fax"
                       type="text"
                       tabIndex={-1}
                       autoComplete="off"
-                      {...register("website")}
+                      {...register("company_fax")}
                     />
                   </div>
                   <div className="space-y-2">

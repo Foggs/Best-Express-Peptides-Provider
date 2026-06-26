@@ -28,14 +28,14 @@ async function run() {
   }
 
   // ── 1. Filled honeypot → silent success, email NEVER sent ──────────────
-  console.log("1. Bot fills the honeypot 'website' field")
+  console.log("1. Bot fills the honeypot 'company_fax' field")
   let sendCount = 0
   contactDeps.sendContactFormEmail = async () => {
     sendCount++
     return { success: true }
   }
 
-  const r1 = await POST(makeReq({ ...validBody, website: "http://spam.example" }, "10.0.0.1"))
+  const r1 = await POST(makeReq({ ...validBody, company_fax: "http://spam.example" }, "10.0.0.1"))
   const j1 = await r1.json()
 
   assert(r1.status === 200, `honeypot filled: status 200 (got ${r1.status})`)
@@ -52,7 +52,7 @@ async function run() {
     return { success: true }
   }
 
-  const r2 = await POST(makeReq({ ...validBody, website: "" }, "10.0.0.2"))
+  const r2 = await POST(makeReq({ ...validBody, company_fax: "" }, "10.0.0.2"))
   const j2 = await r2.json()
 
   assert(r2.status === 200, `empty honeypot: status 200 (got ${r2.status})`)
@@ -86,7 +86,7 @@ async function run() {
     return { success: true }
   }
 
-  const r4 = await POST(makeReq({ ...validBody, website: "   " }, "10.0.0.4"))
+  const r4 = await POST(makeReq({ ...validBody, company_fax: "   " }, "10.0.0.4"))
   const j4 = await r4.json()
 
   assert(r4.status === 200, `whitespace honeypot: status 200 (got ${r4.status})`)

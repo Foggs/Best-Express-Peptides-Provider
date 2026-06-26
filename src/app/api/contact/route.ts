@@ -48,10 +48,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  // Honeypot: a hidden field real users never see or fill. Bots that
+  // Honeypot: a hidden field real users never see or fill. The name avoids
+  // common browser/password-manager autofill heuristics (e.g. "website",
+  // "email") so legitimate users are not falsely trapped. Bots that
   // auto-complete every input populate it, so any non-empty value is spam.
   // Respond with a normal success so bots get no signal that they were caught.
-  const honeypot = (body as Record<string, unknown> | null)?.website
+  const honeypot = (body as Record<string, unknown> | null)?.company_fax
   if (typeof honeypot === 'string' && honeypot.length > 0) {
     return NextResponse.json({ success: true })
   }
