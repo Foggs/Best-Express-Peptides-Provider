@@ -24,6 +24,7 @@ const contactSchema = z.object({
     .trim()
     .min(1, "Message is required")
     .max(5000, "Message is too long"),
+  website: z.string().max(0).optional(),
 })
 
 type ContactFormValues = z.infer<typeof contactSchema>
@@ -123,6 +124,16 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+                  <div className="absolute left-[-9999px] top-[-9999px]" aria-hidden="true">
+                    <label htmlFor="website">Leave this field empty</label>
+                    <input
+                      id="website"
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      {...register("website")}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="name">Name *</Label>
                     <Input

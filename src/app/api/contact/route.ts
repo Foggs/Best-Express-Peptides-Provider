@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkAuthRateLimit } from '@/lib/rate-limit'
-import { sendContactFormEmail } from '@/lib/contactEmail'
+import { contactDeps } from '@/lib/contact-deps'
 
 const contactSchema = z.object({
   name: z
@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
+  // Honeypot: a hidden field real users never see or fill. Bots that
+  // auto-complete every input populate it, so any non-empty value is spam.
+  // Respond with a normal success so bots get no signal that they were caught.
+  const honeypot = (body as Record<string, unknown> | null)?.website
+  if (typeof honeypot === 'string' && honeypot.length > 0) {
+    return NextResponse.json({ success: true })
+  }
+
   const sanitizedBody =
     body && typeof body === 'object'
       ? {
@@ -74,7 +82,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const result = await sendContactFormEmail(parsed.data)
+  const result = await contactDeps.sendContactFormEmail(parsed.data)
 
   if (!result.success) {
     return NextResponse.json(
