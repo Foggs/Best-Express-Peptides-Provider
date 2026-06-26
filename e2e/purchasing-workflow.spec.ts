@@ -37,6 +37,22 @@ test.describe('Unauthenticated API access', () => {
     });
     expect(response.status()).toBe(401);
   });
+
+  test('POST /api/auth/register no longer mints accounts', async ({ request }) => {
+    // The self-registration endpoint that created status:"APPROVED" users
+    // outside vetted onboarding was removed. The path now falls through to the
+    // NextAuth [...nextauth] catch-all, which rejects it (HTTP 400) instead of
+    // creating a user. The security guarantee is simply: it must not succeed.
+    const response = await request.post('/api/auth/register', {
+      data: {
+        name: 'Mallory',
+        email: `bypass-${Date.now()}@example.com`,
+        password: 'supersecret123',
+      },
+    });
+    expect(response.ok()).toBeFalsy();
+    expect(response.status()).toBe(400);
+  });
 });
 
 test.describe('Homepage section visibility', () => {
