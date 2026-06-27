@@ -248,6 +248,62 @@ async function run() {
 
   assert(r15.status === 400, `status 400 (got ${r15.status})`)
   assert(j15.error === "State is required", `error = "State is required" (got "${j15.error}")`)
+
+  // ── 16. Honeypot filled → silently dropped (201, no persistence/email) ────
+  console.log("\n16. Honeypot filled → 201 but no application created and no email sent")
+  setupStubs()
+  let createCalled16: boolean = false
+  let emailCalled16: boolean = false
+  providerIntakeDeps.createApplication = async (_data) => { createCalled16 = true; return { id: "x" } as any }
+  providerIntakeDeps.createApplicationAndPendingUser = async (_p) => { createCalled16 = true; return { id: "x" } as any }
+  providerIntakeDeps.sendSignupEmail = (async () => { emailCalled16 = true; return { success: true } }) as any
+
+  const fd16 = makeFormData()
+  fd16.append("companyUrl", "http://spam.example.com")
+  const r16 = await POST(makeReq(fd16))
+  const j16 = await r16.json()
+
+  assert(r16.status === 201, `status 201 (got ${r16.status})`)
+  assert(j16.success === true, `body.success = true`)
+  assert(createCalled16 === false, `createApplication NOT called for honeypot submission`)
+  assert(emailCalled16 === false, `sendSignupEmail NOT called for honeypot submission`)
+
+  // ── 17. Empty honeypot → processed normally → 201 ────────────────────────
+  console.log("\n17. Empty honeypot value → processed normally → 201")
+  setupStubs()
+  let createCalled17: boolean = false
+  providerIntakeDeps.createApplication = async (_d) => { createCalled17 = true; return { id: "ok" } as any }
+  providerIntakeDeps.createApplicationAndPendingUser = async (_p) => { createCalled17 = true; return { id: "ok" } as any }
+
+  const fd17 = makeFormData()
+  fd17.append("companyUrl", "   ")
+  const r17 = await POST(makeReq(fd17))
+  const j17 = await r17.json()
+
+  assert(r17.status === 201, `status 201 (got ${r17.status})`)
+  assert(j17.success === true, `body.success = true`)
+  assert(createCalled17, `application persisted for legit submission`)
+
+  // ── 18. Oversized field → 400 ─────────────────────────────────────────────
+  console.log("\n18. Oversized firstName → 400")
+  setupStubs()
+
+  const r18 = await POST(makeReq(makeFormData({ firstName: "a".repeat(5000) })))
+  const j18 = await r18.json()
+
+  assert(r18.status === 400, `status 400 (got ${r18.status})`)
+  assert(j18.field === "firstName", `field = "firstName" (got "${j18.field}")`)
+  assert(typeof j18.error === "string" && j18.error.includes("too long"), `error mentions "too long": "${j18.error}"`)
+
+  // ── 19. Oversized comments → 400 ──────────────────────────────────────────
+  console.log("\n19. Oversized comments → 400")
+  setupStubs()
+
+  const r19 = await POST(makeReq(makeFormData({ comments: "x".repeat(5000) })))
+  const j19 = await r19.json()
+
+  assert(r19.status === 400, `status 400 (got ${r19.status})`)
+  assert(j19.field === "comments", `field = "comments" (got "${j19.field}")`)
 }
 
 run()

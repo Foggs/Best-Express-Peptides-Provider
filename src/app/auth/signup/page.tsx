@@ -131,6 +131,7 @@ export default function SignUpPage() {
   const [zipCode, setZipCode] = useState("")
   const [referredBy, setReferredBy] = useState("")
   const [comments, setComments] = useState("")
+  const [honeypot, setHoneypot] = useState("")
 
   const [certFileName, setCertFileName] = useState("")
   const [licenseFileName, setLicenseFileName] = useState("")
@@ -198,6 +199,7 @@ export default function SignUpPage() {
       formData.append("zipCode", zipCode)
       formData.append("referredBy", referredBy)
       if (comments) formData.append("comments", comments)
+      formData.append("companyUrl", honeypot)
 
       const certFile = certRef.current?.files?.[0]
       if (certFile) formData.append("resellerCertificate", certFile)
@@ -263,6 +265,21 @@ export default function SignUpPage() {
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
+
+          {/* Honeypot: hidden from real users; bots that auto-fill inputs will
+              populate it and get silently rejected by the server. */}
+          <div aria-hidden="true" className="absolute left-[-9999px] top-[-9999px] h-0 w-0 overflow-hidden" >
+            <label htmlFor="companyUrl">Company URL (leave blank)</label>
+            <input
+              id="companyUrl"
+              name="companyUrl"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
 
           {/* ── Contact Information ─────────────────────────── */}
           <div className="bg-white border border-gray-200 rounded-md p-6">
