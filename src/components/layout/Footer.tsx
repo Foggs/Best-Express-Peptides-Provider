@@ -109,6 +109,14 @@ export function Footer() {
                     Refund and Cancellation Policy
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/accessibility"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Accessibility Statement
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>
