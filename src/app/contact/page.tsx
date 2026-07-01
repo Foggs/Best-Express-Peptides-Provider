@@ -1,18 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, Loader2, MailIcon } from "lucide-react"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { CheckCircle, Loader2, MailIcon } from "lucide-react";
 
 const contactSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(100, "Name is too long"),
   email: z
     .string()
     .trim()
@@ -27,13 +37,13 @@ const contactSchema = z.object({
   // Honeypot — kept unvalidated on the client so autofill never blocks a real
   // user; the server is the sole enforcement point for spam rejection.
   company_fax: z.string().optional(),
-})
+});
 
-type ContactFormValues = z.infer<typeof contactSchema>
+type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function ContactPage() {
-  const { toast } = useToast()
-  const [submitted, setSubmitted] = useState(false)
+  const { toast } = useToast();
+  const [submitted, setSubmitted] = useState(false);
 
   const {
     register,
@@ -43,7 +53,7 @@ export default function ContactPage() {
   } = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: { name: "", email: "", message: "" },
-  })
+  });
 
   const onSubmit = async (values: ContactFormValues) => {
     try {
@@ -51,46 +61,48 @@ export default function ContactPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
-      })
+      });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
+        const data = await res.json().catch(() => ({}));
         const message =
           typeof data?.error === "string"
             ? data.error
-            : "Something went wrong. Please try again."
+            : "Something went wrong. Please try again.";
         toast({
           title: "Unable to send message",
           description: message,
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       toast({
         title: "Message sent",
         description: "Thanks for reaching out — we'll get back to you soon.",
-      })
-      reset()
-      setSubmitted(true)
+      });
+      reset();
+      setSubmitted(true);
     } catch {
       toast({
         title: "Network error",
         description: "Please check your connection and try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="bg-gray-50 py-12">
       <div className="container-custom">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Contact Us</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Contact Us
+            </h1>
             <p className="mt-3 text-gray-600">
-              Have a question about our research peptides or need help with an order?
-              Send us a message and our team will get back to you.
+              Have a question about us? Send us a message and our team will get
+              back to you.
             </p>
           </div>
 
@@ -102,7 +114,8 @@ export default function ContactPage() {
                   Thank you for contacting us
                 </h2>
                 <p className="mt-2 text-gray-600">
-                  Your message has been delivered to our team. We&apos;ll respond as soon as possible.
+                  Your message has been delivered to our team. We&apos;ll
+                  respond as soon as possible.
                 </p>
                 <Button
                   className="mt-6"
@@ -125,8 +138,15 @@ export default function ContactPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-                  <div className="absolute left-[-9999px] top-[-9999px]" aria-hidden="true">
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="space-y-5"
+                  noValidate
+                >
+                  <div
+                    className="absolute left-[-9999px] top-[-9999px]"
+                    aria-hidden="true"
+                  >
                     <label htmlFor="company_fax">Leave this field empty</label>
                     <input
                       id="company_fax"
@@ -183,7 +203,11 @@ export default function ContactPage() {
                     )}
                   </div>
 
-                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full"
+                  >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -200,5 +224,5 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

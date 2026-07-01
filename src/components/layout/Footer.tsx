@@ -11,13 +11,13 @@ export function Footer() {
             <div className="flex items-center gap-2">
               <FlaskIcon size={24} className="text-primary" />
               <span className="text-lg font-bold text-white">
-                BestRxExpressPeptides
+                BestRxExpress
               </span>
             </div>
-            <p className="text-sm">
+            {/* <p className="text-sm">
               Premium research peptides for scientific study. All products are
               for research purposes only.
-            </p>
+            </p> */}
             <address className="not-italic space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <MailIcon size={16} />
@@ -93,22 +93,22 @@ export function Footer() {
                     Privacy Policy
                   </Link>
                 </li>
-                <li>
+                {/* <li>
                   <Link
                     href="/disclaimer"
                     className="hover:text-primary transition-colors"
                   >
                     Disclaimer
                   </Link>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <Link
                     href="/refund"
                     className="hover:text-primary transition-colors"
                   >
                     Refund and Cancellation Policy
                   </Link>
-                </li>
+                </li> */}
                 <li>
                   <Link
                     href="/accessibility"
