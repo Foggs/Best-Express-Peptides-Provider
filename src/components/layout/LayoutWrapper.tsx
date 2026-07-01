@@ -17,7 +17,6 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
         Skip to main content
       </a>
       {!isAdminPage && <ScreenReaderAnnouncer />}
-      /* {!isAdminPage && <DisclaimerBanner />} */
       {!isAdminPage && <Header />}
       <main id="main-content" className="min-h-screen" role="main">
         {children}
