@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
-import { DisclaimerBanner } from "./DisclaimerBanner";
 import { ScreenReaderAnnouncer } from "@/components/accessibility/ScreenReaderAnnouncer";
 import type React from "react";
 

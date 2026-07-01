@@ -1,4 +1,10 @@
+import { Metadata } from "next"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+export const metadata: Metadata = {
+  title: "Accessibility Statement - BestExpressPeptides",
+  description: "BestExpressPeptides accessibility statement — our WCAG 2.1 AA commitment, accessibility features, and how to report barriers.",
+}
 
 export default function AccessibilityPage() {
   return (

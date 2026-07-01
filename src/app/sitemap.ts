@@ -58,6 +58,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
       lastModified: new Date(),
     },
+    {
+      url: `${baseUrl}/accessibility`,
+      changeFrequency: 'yearly',
+      priority: 0.4,
+      lastModified: new Date(),
+    },
   ]
 
   const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
