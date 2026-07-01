@@ -12,7 +12,7 @@ export default function AccessibilityPage() {
       <div className="container-custom max-w-4xl">
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">Accessibility Statement</CardTitle>
+            <h1 className="text-3xl font-bold tracking-tight">Accessibility Statement</h1>
             <p className="text-muted-foreground">Last Updated: July 1, 2026</p>
           </CardHeader>
           <CardContent className="prose max-w-none">

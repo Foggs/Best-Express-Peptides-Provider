@@ -124,13 +124,13 @@ export function Footer() {
 
         <Separator className="my-8 bg-gray-700" />
 
-        <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4 mb-8">
+        {/* <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4 mb-8">
           <p className="text-yellow-300 text-sm text-center font-medium">
             All products sold on this website are for research and laboratory
             use only. Not for human consumption. By purchasing, you agree to use
             these products solely for research purposes.
           </p>
-        </div>
+        </div> */}
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <p suppressHydrationWarning>
@@ -142,7 +142,7 @@ export function Footer() {
             <span>|</span>
             <span>Fast Shipping</span>
             <span>|</span>
-            <span>Lab-Tested Quality</span>
+            {/* <span>Lab-Tested Quality</span> */}
           </div>
         </div>
       </div>
