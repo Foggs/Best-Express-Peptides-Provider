@@ -63,16 +63,16 @@ export default async function HomePage() {
 
           <div className="container-custom relative py-20 md:py-32">
             <div className="max-w-3xl">
-              <Badge className="mb-4 bg-blue-500/20 text-blue-200 border-blue-400/30">
+              {/* <Badge className="mb-4 bg-blue-500/20 text-blue-200 border-blue-400/30">
                 Laboratory Grade Peptides
-              </Badge>
+              </Badge> */}
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                Premium Research Peptides for Scientific Excellence
+                Where Pharmacies and Health-Minded Professionals Align
               </h1>
               <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                Discover our comprehensive collection of research-grade
-                peptides. Every product is rigorously tested and verified for
-                purity to support your scientific research.
+                No need to be bogged down with phone calls, text messages and
+                emails. We have created a well vetted community of reliable and
+                trustworthy pharmacies and clinics to seamlessly do business
               </p>
               {/* <div className="flex flex-wrap gap-4">
               <Button size="lg" asChild className="bg-white text-blue-900 hover:bg-blue-50">
@@ -88,14 +88,16 @@ export default async function HomePage() {
 
         <section className="py-12 bg-white border-b">
           <div className="container-custom">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-8">
               <div className="flex items-center gap-3">
                 <div className="bg-primary/10 p-3 rounded-lg">
-                  <Shield className="h-6 w-6 text-primary" />
+                  <Microscope className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold">99%+ Purity</p>
-                  <p className="text-sm text-muted-foreground">HPLC Verified</p>
+                  <p className="font-semibold">Pharmacuetical </p>
+                  <p className="text-sm text-muted-foreground">
+                    503A/503B Only
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -105,20 +107,21 @@ export default async function HomePage() {
                 <div>
                   <p className="font-semibold">Fast Shipping</p>
                   <p className="text-sm text-muted-foreground">
-                    2-3 Day Delivery
+                    1-2 Day Delivery
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="bg-primary/10 p-3 rounded-lg">
-                  <Award className="h-6 w-6 text-primary" />
+                  {/* <Award className="h-6 w-6 text-primary" /> */}
+                  <Shield className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold">Lab Tested</p>
-                  <p className="text-sm text-muted-foreground">COA Available</p>
+                  <p className="font-semibold">Secure Transactions</p>
+                  {/* <p className="text-sm text-muted-foreground"></p> */}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              {/* <div className="flex items-center gap-3">
                 <div className="bg-primary/10 p-3 rounded-lg">
                   <Microscope className="h-6 w-6 text-primary" />
                 </div>
@@ -126,7 +129,7 @@ export default async function HomePage() {
                   <p className="font-semibold">Research Grade</p>
                   <p className="text-sm text-muted-foreground">USA Made</p>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </section>
@@ -143,7 +146,7 @@ export default async function HomePage() {
           </>
         )}
 
-        <section className="py-16 bg-gray-50">
+        {/* <section className="py-16 bg-gray-50">
           <div className="container-custom">
             <div className="max-w-3xl mx-auto text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">
@@ -243,7 +246,7 @@ export default async function HomePage() {
               </Card>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* <section className="py-16 bg-primary text-white">
           <div className="container-custom text-center">

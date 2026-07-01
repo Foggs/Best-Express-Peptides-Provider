@@ -75,12 +75,12 @@ export function Header() {
               </Button>
             </Link>
 
-            <Link href="/admin/login" aria-label="Admin">
+            {/* <Link href="/admin/login" aria-label="Admin">
               <Button variant="outline" size="sm">
                 <Shield size={16} className="mr-2" />
                 Admin
               </Button>
-            </Link>
+            </Link> */}
 
             {/* <Link href="/" aria-label="Home">
               <Button variant="outline" size="icon" aria-label="Home">

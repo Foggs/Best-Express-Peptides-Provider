@@ -1,0 +1,57 @@
+Accessibility Statement
+Accessibility Statement
+Last Updated: July 1, 2026
+
+Our Commitment
+Ironsail Pharma is committed to ensuring digital accessibility for people with disabilities. We are continually improving the user experience for everyone and applying the relevant accessibility standards to ensure we provide equal access to all users.
+
+Conformance Status
+The Web Content Accessibility Guidelines (WCAG) define requirements for designers and developers to improve accessibility for people with disabilities. It defines three levels of conformance: Level A, Level AA, and Level AAA.
+
+Our website and platform strive to conform to WCAG 2.1 level AA. We conduct ongoing accessibility assessments of our website and platform, and we remediate issues identified to improve accessibility.
+
+Accessibility Features
+Our website and platform include the following accessibility features:
+
+Keyboard accessibility: All features and content are accessible using keyboard navigation
+Alt text for images: We provide alternative text for images to ensure content is accessible to screen reader users
+Color contrast: We design our interface with sufficient color contrast between text and backgrounds
+Resizable text: Our content can be resized without loss of functionality
+Descriptive links: We use descriptive link text to help users understand where links will take them
+Consistent navigation: Our navigation is consistent across the website
+Form labels: All form fields have properly associated labels
+Focus indicators: Visible focus indicators help keyboard users navigate our interface
+Assistive Technology Compatibility
+We aim to ensure our website and platform are compatible with various assistive technologies, including:
+
+Screen readers (such as JAWS, NVDA, VoiceOver, and TalkBack)
+Speech recognition software
+Screen magnification software
+Alternative input devices
+Known Limitations
+While we strive to ensure that our website and platform are accessible, there may be some limitations:
+
+Some older content may not fully meet our current accessibility standards
+Third-party content and applications that we link to may not conform to the same accessibility standards
+We are working to address these limitations and improve the accessibility of our digital properties.
+
+Feedback
+We welcome your feedback on the accessibility of our website and platform. If you encounter accessibility barriers or have suggestions for improvement, please contact us at:
+
+Email: contact@ironsailpharma.com
+Phone: [Phone Number]
+We will make all reasonable efforts to address your concerns and provide the information you need in an accessible format.
+
+Assessment Methodology
+We assess the accessibility of our website and platform through:
+
+Regular internal audits
+Automated testing tools
+User testing with assistive technologies
+Feedback from users with disabilities
+Periodic third-party accessibility evaluations
+Compliance Statement
+Ironsail Pharma is committed to making its website and platform accessible in accordance with applicable laws and regulations, including but not limited to the Americans with Disabilities Act (ADA), Section 508 of the Rehabilitation Act, and other applicable state and local laws.
+
+Contact Us
+If you have any questions about our accessibility efforts or need assistance, please contact us at contact@ironsailpharma.com.

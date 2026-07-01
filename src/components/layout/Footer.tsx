@@ -36,7 +36,7 @@ export function Footer() {
           </div>
 
           <div className="grid grid-cols-2 gap-8">
-            <nav aria-label="Company information">
+            {/* <nav aria-label="Company information">
               <h3 className="font-semibold text-white mb-4">Information</h3>
               <ul className="space-y-2 text-sm">
                 <li>
@@ -72,7 +72,7 @@ export function Footer() {
                   </Link>
                 </li>
               </ul>
-            </nav>
+            </nav> */}
 
             <nav aria-label="Legal information">
               <h3 className="font-semibold text-white mb-4">Legal</h3>
